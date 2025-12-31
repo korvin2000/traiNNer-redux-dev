@@ -486,7 +486,7 @@ class SRModel(BaseModel):
                 lq_target = None
 
                 # Prepare images for losses
-                real_images_unaug = gt_for_loss.gt.clone()
+                real_images_unaug = gt_for_loss.clone()
                 fake_images_unaug = self.output.clone()
                 real_images_aug = real_images_unaug
                 fake_images_aug = fake_images_unaug
@@ -780,9 +780,6 @@ class SRModel(BaseModel):
                 gradients_d = [
                     p.grad for p in self.net_d.parameters() if p.grad is not None
                 ]
-
-                # Ensure gradients are unscaled before monitoring or clipping
-                self.scaler_d.unscale_(self.optimizer_d)
 
                 # Update gradient monitoring for automation (includes discriminator)
                 suggested_threshold = self.update_automation_gradient_monitoring(

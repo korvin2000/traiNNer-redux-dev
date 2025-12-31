@@ -249,6 +249,17 @@ def rgb2pixelformat_pt(img: Tensor, pixel_format: PixelFormat) -> Tensor:
     raise NotImplementedError(pixel_format)
 
 
+RGB2YCBCR_WEIGHT = torch.tensor(
+    [
+        [65.481, -37.797, 112.0],
+        [128.553, -74.203, -93.786],
+        [24.966, 112.0, -18.214],
+    ],
+    dtype=torch.float32,
+)
+RGB2YCBCR_BIAS = torch.tensor([16, 128, 128], dtype=torch.float32).view(1, 3, 1, 1)
+
+
 def pixelformat2rgb_pt(
     img: Tensor, img_ref_rgb: Tensor | None, pixel_format: PixelFormat
 ) -> Tensor:
@@ -285,26 +296,24 @@ def rgb2ycbcr_pt(img: Tensor, y_only: bool = False) -> Tensor:
     Returns:
         (Tensor): converted images with the shape (n, 3/1, h, w), the range [0, 1], float.
     """
+    img_f32 = img.float()
+
     if y_only:
-        weight = torch.tensor([[65.481], [128.553], [24.966]]).to(img)
+        weight = RGB2YCBCR_WEIGHT[:, :1].to(img_f32.device)
         out_img = (
-            torch.matmul(img.permute(0, 2, 3, 1), weight).permute(0, 3, 1, 2) + 16.0
+            torch.matmul(img_f32.permute(0, 2, 3, 1), weight).permute(0, 3, 1, 2)
+            + 16.0
         )
     else:
-        weight = torch.tensor(
-            [
-                [65.481, -37.797, 112.0],
-                [128.553, -74.203, -93.786],
-                [24.966, 112.0, -18.214],
-            ]
-        ).to(img)
-        bias = torch.tensor([16, 128, 128]).view(1, 3, 1, 1).to(img)
+        weight = RGB2YCBCR_WEIGHT.to(img_f32.device)
+        bias = RGB2YCBCR_BIAS.to(img_f32.device)
         out_img = (
-            torch.matmul(img.permute(0, 2, 3, 1), weight).permute(0, 3, 1, 2) + bias
+            torch.matmul(img_f32.permute(0, 2, 3, 1), weight).permute(0, 3, 1, 2)
+            + bias
         )
 
     out_img = out_img / 255.0
-    return out_img
+    return out_img.to(dtype=img.dtype)
 
 
 def ycbcr2rgb_pt(img: Tensor) -> Tensor:
