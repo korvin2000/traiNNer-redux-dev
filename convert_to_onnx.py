@@ -147,7 +147,12 @@ def convert_onnx_to_low_precision(
         op_types_to_exclude=["ConvTranspose"],
     )
 
-    # TODO for bf16 model convert io to fp16
+def _convert_io_to_fp16(model_proto: ModelProto) -> ModelProto:
+    for value_info in list(model_proto.graph.input) + list(model_proto.graph.output):
+        tensor_type = value_info.type.tensor_type
+        if tensor_type.elem_type == TensorProto.BFLOAT16:
+            tensor_type.elem_type = TensorProto.FLOAT16
+    return model_proto
 
 
 def convert_and_save_onnx(
@@ -356,6 +361,8 @@ def convert_and_save_onnx(
             dtype,
             requested_opset,
         )
+        if dtype == "bf16":
+            model_proto = _convert_io_to_fp16(model_proto)
         onnx.save(model_proto, out_path)
 
         if osp.exists(temp_out_path):
