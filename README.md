@@ -12,7 +12,6 @@ Please see the [getting started](https://trainner-redux.readthedocs.io/en/latest
 Tables below mirror the project registries so you can quickly map option strings to concrete implementations. The weight column follows the resource taxonomy in [`architecture_categories.json`](architecture_categories.json), and dates reflect when the implementation landed in this repository (first commit date) unless a historical paper/release date is well-established. See also the [architecture reference](https://trainner-redux.readthedocs.io/en/latest/arch_reference.html) and [loss reference](https://trainner-redux.readthedocs.io/en/latest/loss_reference.html) for per-model parameter blocks.
 
 ### Supported architectures
-<small>
 | arch | option | date | weight |
 |------|--------|------|--------|
 | [ATD](https://arxiv.org/abs/2401.08209) | `atd`, `atd_light` | 2024-01 | Heavy |
@@ -66,7 +65,7 @@ Tables below mirror the project registries so you can quickly map option strings
 | [TSPANv2](https://github.com/Kim2091/TSPANv2) | `tspan2` | 2025-11 | Ultra light |
 | [UNet](https://arxiv.org/abs/1505.04597) | `unet` | 2015-05 | Medium |
 | [A2FPN](https://github.com/lironui/A2-FPN) | `a2fpn` | 2022-01 | Light |
-</small>
+
 
 > [!NOTE]
 > Additional registry entries (e.g., Paragon Diffusion/SR families, LKFMixer, ElysiumSR, HyperionSR, TSPAN/TemporalSpan, etc.) are also available; consult `docs/source/arch_reference.md` and the architecture registry for the full surface area.
