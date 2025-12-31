@@ -781,6 +781,10 @@ class SRModel(BaseModel):
                     p.grad for p in self.net_d.parameters() if p.grad is not None
                 ]
 
+                # Ensure gradients are unscaled before monitoring or clipping
+                # TODO: check if it's really necessary to unscale gradients
+                # self.scaler_d.unscale_(self.optimizer_d)                
+
                 # Update gradient monitoring for automation (includes discriminator)
                 suggested_threshold = self.update_automation_gradient_monitoring(
                     gradients_d
