@@ -16,54 +16,56 @@ Tables below mirror the project registries so you can quickly map option strings
 | arch | option | date | weight |
 |------|--------|------|--------|
 | [ATD](https://arxiv.org/abs/2401.08209) | `atd`, `atd_light` | 2024-01 | Heavy |
-| ArtCNN | `artcnn_r16f96`, `artcnn_r3f24`, `artcnn_r5f48`, `ar...n_r8f24`, `artcnn_r8f48`, `artcnn_r8f64` | — | Ultra light → Light |
+| [ArtCNN](https://github.com/Artoriuz/ArtCNN) | `artcnn_r16f96`, `artcnn_r3f24`, `artcnn_r5f48`, `ar...n_r8f24`, `artcnn_r8f48`, `artcnn_r8f64` | 2024-11 | Ultra light → Light |
 | [AutoEncoder](https://en.wikipedia.org/wiki/Autoencoder) | `autoencoder` | — | — |
 | [CRAFT](https://arxiv.org/abs/2308.05022) | `craft` | 2023-08 | Medium |
 | [DAT](https://arxiv.org/abs/2308.03364) | `dat`, `dat_2`, `dat_light`, `dat_s` | 2023-08 | Heavy |
-| DCTLSA | `dctlsa` | — | Medium heavy |
-| DIS | `dis_balanced`, `dis_fast` | — | — |
+| [DCTLSA](https://github.com/zengkun301/DCTLSA) | `dctlsa` | 2023 | Medium heavy |
+| [DIS](https://github.com/Kim2091/DIS) | `dis_balanced`, `dis_fast` | 2025-11 | lightweight |
 | [DITN_Real](https://arxiv.org/abs/2308.02794) | `ditn_real` | 2023-08 | Medium |
 | [DRCT](https://arxiv.org/abs/2404.00722) | `drct`, `drct_l`, `drct_xl` | 2024-03 | Heavy → Ultra heavy |
-| DWT | `dwt`, `dwt_s` | — | Heavy → Ultra heavy |
-| EIMN | `eimn_a`, `eimn_l` | — | Medium |
+| [DWT](https://github.com/soobin419/DWT) | `dwt`, `dwt_s` | 2023 | Heavy → Ultra heavy |
+| [EIMN](https://github.com/liux520/EIMN) | `eimn_a`, `eimn_l` | 2023 | Medium |
 | [ELAN](https://arxiv.org/abs/2203.06697) | `elan`, `elan_light` | 2022-03 | Light → Medium |
 | [EMT](https://arxiv.org/abs/2305.11403) | `emt`, `emt_l`, `emt_t` | 2023-05 | Light → Medium |
-| ESCRealM | `escrealm` | — | Medium |
+| [ESC](https://github.com/dslisleedh/ESC) | `escrealm` | 2025 | Medium |
 | [ESRGAN](https://arxiv.org/abs/1809.00219) | `esrgan`, `esrgan_lite` | 2018-09 | Medium |
-| FDaT | `fdat` | — | Heavy |
-| FlexNet | `flexnet` | — | Light |
-| GateRV3 | `gaterv3`, `gaterv3_light`, `gaterv3_ultra` | — | Light → Medium |
+| [FDAT](https://github.com/stinkybread/FDAT) | `fdat` | 2025-06 | Medium |
+| [FlexNet](https://github.com/umzi2/FlexNet) | `flexnet` | 2024-10 | Light |
+| [GateRV3](https://github.com/umzi2/GaterV3) | `gaterv3`, `gaterv3_light`, `gaterv3_ultra` | 2025-06 | Light → Medium |
 | [GRL](https://arxiv.org/abs/2303.00748) | `grl`, `grl_b`, `grl_s`, `grl_t` | 2023-03 | Medium heavy |
 | [HAT](https://arxiv.org/abs/2205.04437) | `hat`, `hat_s`, `hat_xl` | 2022-05 | Ultra heavy |
 | [HiT](https://arxiv.org/abs/2407.05878) | `hit_sng`, `hit_srf`, `hit_srf_medium`, `hit_srf_large` | 2024-07 | Light → Heavy |
 | [LKFMixer](https://arxiv.org/abs/2508.11391) | `lkfmixer` | 2025-08 | Medium |
 | [LMLT](https://arxiv.org/abs/2409.03516) | `lmlt_base`, `lmlt_large` | 2024-09 | Medium heavy |
 | [MAN](https://arxiv.org/abs/2209.14145) | `man_light`, `man_tiny` | 2022-09 | Medium |
-| MetaGAN3 | `metagan3`, `metagan3_jpeg`, `metagan3_jpeg_ca`, `metagan3_pe` | — | Heavy |
-| MoESR2 | `moesr2` | — | Heavy |
-| MoSR | `mosr`, `mosr_t` | — | Medium |
-| MoSRv2 | `mosrv2`, `mosrv2_t`, `mosrv2_tu` | — | Medium |
+| [MetaGAN3](https://github.com/umzi2/MetaGan) | `metagan3`, `metagan3_jpeg`, `metagan3_jpeg_ca`, `metagan3_pe` | 2025 | Medium heavy |
+| [MoESR2](https://github.com/umzi2/MoESR) | `moesr2` | 2025 | Heavy |
+| [MoSR](https://github.com/umzi2/MoSR) | `mosr`, `mosr_t` | 2024-08 | Medium |
+| [MoSRv2](https://github.com/umzi2/MoSRV2) | `mosrv2`, `mosrv2_t`, `mosrv2_tu` | 2025-03 | Medium |
 | [OmniSR](https://arxiv.org/abs/2304.10244) | `omnisr` | 2023-04 | Light |
 | [PLKSR](https://arxiv.org/abs/2404.11848) | `plksr`, `plksr_tiny` | 2024-04 | Medium heavy |
 | [RCAN](https://arxiv.org/abs/1807.02758) | `rcan` | 2018-07 | Medium heavy |
 | [RGT](https://arxiv.org/abs/2303.06373) | `rgt`, `rgt_s` | 2023-03 | Medium heavy |
 | [RRDBNet](https://arxiv.org/abs/1809.00219) | `rrdbnet`, `rrdbnet_bicubic` | 2018-09 | Medium |
+| [RTMoSR](https://github.com/rewaifu/RTMoSR) | `rtmosr`, `rtmosr_l`, `rtmosr_ul` | 2025-01 | Ultra light → Light |
+| [RealCUGAN](https://github.com/bilibili/ailab/tree/main/Real-CUGAN) | `realcugan` | 2022-01 | Medium heavy |
+| [RealPLKSR](https://github.com/dslisleedh/PLKSR) | `realplksr`, `realplksr_large`, `realplksr_tiny` | 2024-04 | Light → Medium |
 | [SAFMN](https://arxiv.org/abs/2302.13800) | `safmn`, `safmn_l` | 2023-02 | Light → Medium |
 | [SCUNet](https://arxiv.org/abs/2203.13278) | `scunet`, `scunet_aaf6aa`, `scunet_aaf6aa_wot`, `scunet_clamp`, `scunet_esrgan`, `scunet_psnr`, `scunet_tiny` | 2022-03 | Medium |
 | [Sebica](https://arxiv.org/abs/2410.20546) | `sebica`, `sebica_mini` | 2024-10 | Light |
 | [SeemoRe](https://arxiv.org/abs/2402.03412) | `seemore_b`, `seemore_t` | 2024-02 | Medium |
-| [SPAN](https://arxiv.org/abs/2311.12770) | `span`, `spanplus_s`, `spanplus_sts`, `spanplus_srep`, `spanplus_st`, `spanplus_srep_st`, `spanplus_sts_st` | 2023-11 | Ultra light |
-| SpanPlus | `spanplus` | — | Ultra light |
+| [SPAN](https://arxiv.org/abs/2311.12770) | `span` | 2023-11 | Ultra light |
+| [SpanPlus](https://github.com/umzi2/SPANPlus) | `spanplus`, `spanplus_s`, `spanplus_sts`, `spanplus_srep`, `spanplus_st`, `spanplus_srep_st`, `spanplus_sts_st` | 2024-08 | Ultra light |
 | [SRFormer](https://arxiv.org/abs/2303.09735) | `srformer_light`, `srformer_medium` | 2023-03 | Light → Medium |
 | [SRVGGNetCompact](https://github.com/xinntao/Real-ESRGAN/blob/master/realesrgan/archs/srvgg_arch.py) | `srvggnet_compact` | — | Light |
 | [Swin2SR](https://arxiv.org/abs/2209.11345) | `swin2sr`, `swin2sr_l` | 2022-09 | Heavy |
 | [SwinIR](https://arxiv.org/abs/2108.10257) | `swinir`, `swinir_l` | 2021-08 | Heavy |
-| TRRDB | `trrdb` | — | Medium |
-| TSCUNet | `tscunet`, `tscunet_l` | — | Medium |
-| TSPAN | `tspan`, `tspan_nx`, `tspanplus` | — | Ultra light |
-| TSPANv2 | `tspan2` | — | Ultra light |
+| [TSCUNet](https://github.com/Demetter/TSCUNet_Trainer) | `tscunet`, `tscunet_l` | 2024-04 | Medium |
+| [TSPAN](https://github.com/Kim2091/TSPAN) | `tspan`, `tspan_nx`, `tspanplus` | 2025-09 | Ultra light |
+| [TSPANv2](https://github.com/Kim2091/TSPANv2) | `tspan2` | 2025-11 | Ultra light |
 | [UNet](https://arxiv.org/abs/1505.04597) | `unet` | 2015-05 | Medium |
-| A2FPN | `a2fpn` | — | Light |
+| [A2FPN](https://github.com/lironui/A2-FPN) | `a2fpn` | 2022-01 | Light |
 
 > [!NOTE]
 > Additional registry entries (e.g., Paragon Diffusion/SR families, LKFMixer, ElysiumSR, HyperionSR, TSPAN/TemporalSpan, etc.) are also available; consult `docs/source/arch_reference.md` and the architecture registry for the full surface area.
