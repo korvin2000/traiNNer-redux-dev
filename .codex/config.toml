@@ -1,7 +1,18 @@
 model = "gpt-5.2-codex-xmas"
 model_reasoning_effort = "high"
 approval_policy = "never"
-promt_techniques=chain of thought; program of thought; tree of thoughs (ToT);contrastive reasoning; Chain of Draft (CoD); Chain-Of-Reasoning (CoR); Self-Refine; Chain Of Verification
+prompt_techniques = [
+    "chain of thought",
+    "program of thought",
+    "tree of thoughts",
+    "contrastive reasoning",
+    "chain of draft",
+    "chain-of-reasoning",
+    "self-refine",
+    "chain of verification",
+    "intermediate summarization",
+    "priority hierarchy",
+]
 
 [code]
 optimize = "speed"
@@ -11,7 +22,13 @@ comments = "medium"
 [project]
 language = "python"
 machine_learning_library = "PyTorch"
-documenation = "Markdown"
+documentation = "Markdown"
+description = "traiNNer-redux: PyTorch super-resolution/restoration training framework with registry-driven architectures, losses, and optimizers."
+entrypoints = ["train.py", "test.py", "convert_to_onnx.py"]
+schema_path = "schemas"
+options_path = "options"
+architecture_reference = "docs/source/arch_reference.md"
+performance_map = "architecture_categories.json"
 
 [formatting]
 quote-style = "double"
