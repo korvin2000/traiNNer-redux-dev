@@ -7,6 +7,75 @@
 ## Usage Instructions
 Please see the [getting started](https://trainner-redux.readthedocs.io/en/latest/getting_started.html) page for instructions on how to use traiNNer-redux.
 
+## Manual setup and running without install scripts
+
+The `install.sh` helper builds a local virtual environment, installs CUDA-enabled `torch`/`torchvision`, adds `pillow-avif-plugin`, and finally runs `pip install .` to pull in everything declared in `pyproject.toml`. If you want to manage the environment yourself (for example with Conda or a system Python), follow the steps below.
+
+### What gets installed
+
+- Core requirements live in [`pyproject.toml`](pyproject.toml) (Python ≥ 3.11). Notable packages are `torch`/`torchvision`, dataset/image helpers (`opencv-python`, `Pillow`, `pyvips`), training utilities (`rich`, `tqdm`, `tb-nightly`, `transformers`), and optional extras such as `onnxruntime-gpu` under the `onnx` extra.
+- Static analysis uses [`pyrightconfig.json`](pyrightconfig.json); install the `dev` extra if you want to run `pyright` locally.
+
+### Create and activate an environment
+
+Pick one of the examples below. Replace CUDA wheels with the variant that matches your GPU or switch to the CPU index as needed.
+
+**Linux / macOS (Python venv)**
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+pip install --index-url https://download.pytorch.org/whl/cu121 torch torchvision  # use cu121/cu128/cpu as appropriate
+pip install pillow-avif-plugin
+pip install .
+```
+
+**Windows PowerShell (Python venv)**
+
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install --upgrade pip
+pip install --index-url https://download.pytorch.org/whl/cu121 torch torchvision  # swap cu121 for your CUDA/CPU build
+pip install pillow-avif-plugin
+pip install .
+```
+
+**Conda (Linux/Windows)**
+
+```bash
+conda create -n trainner python=3.12
+conda activate trainner
+pip install --index-url https://download.pytorch.org/whl/cu121 torch torchvision
+pip install pillow-avif-plugin
+pip install .
+```
+
+- To add optional extras, append them to the final install step, e.g. `pip install ".[dev,onnx]"`.
+- For CPU-only installs, swap the `--index-url` for `https://download.pytorch.org/whl/cpu`.
+
+### Updating an existing checkout
+
+```bash
+git pull
+pip install -U .  # re-resolves dependencies and refreshes the traiNNer-redux entry points
+```
+
+### Running the training and testing entry points
+
+Configs are YAML files under `options/` (validated against the JSON schemas in `schemas/`). Each run requires an `-opt` argument pointing to one of those files; use `--launcher pytorch` if you need distributed training.
+
+```bash
+# Train
+python train.py -opt options/train/example.yml
+
+# Test / inference
+python test.py -opt options/test/example.yml
+```
+
+You can override the experiment name with `--name`, set `--manual_seed` for reproducibility, or pass `--auto_resume` to pick up checkpoints automatically.
+
 ## ✨ Feature Matrix (quick reference)
 
 Tables below mirror the project registries so you can quickly map option strings to concrete implementations. The weight column follows the resource taxonomy in [`architecture_categories.json`](architecture_categories.json), and dates reflect when the implementation landed in this repository (first commit date) unless a historical paper/release date is well-established. See also the [architecture reference](https://trainner-redux.readthedocs.io/en/latest/arch_reference.html) and [loss reference](https://trainner-redux.readthedocs.io/en/latest/loss_reference.html) for per-model parameter blocks.
