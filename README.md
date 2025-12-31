@@ -7,6 +7,98 @@
 ## Usage Instructions
 Please see the [getting started](https://trainner-redux.readthedocs.io/en/latest/getting_started.html) page for instructions on how to use traiNNer-redux.
 
+## ✨ Feature Matrix (quick reference)
+
+Tables below mirror the project registries so you can quickly map option strings to concrete implementations. The weight column follows the resource taxonomy in [`architecture_categories.json`](architecture_categories.json), and dates reflect when the implementation landed in this repository (first commit date) unless a historical paper/release date is well-established.
+
+### Supported architectures
+
+| arch | option | date | weight |
+|------|--------|------|--------|
+| HAT-L/HAT-M/HAT-S | `hat_l`, `hat_m`, `hat_s` | 2024-12-28 | Ultra heavy |
+| DRCT family | `drct_xl`, `drct_l`, `drct` | 2024-12-28 | Ultra heavy / Ultra heavy / Heavy |
+| DAT family | `dat`, `dat_2`, `dat_s`, `dat_light` | 2024-12-28 | Heavy / Heavy / Heavy / Heavy |
+| ATD variants | `atd`, `atd_light` | 2024-12-28 | Heavy / Heavy |
+| SwinIR | `swinir_l`, `swinir_m`, `swinir_s` | 2024-12-28 | Heavy / Medium heavy / Medium heavy |
+| Swin2SR | `swin2sr_l`, `swin2sr_m`, `swin2sr_s` | 2024-12-28 | Heavy / Heavy / Medium heavy |
+| SRFormer | `srformer`, `srformer_light` | 2024-12-28 | Heavy / Medium heavy |
+| OmniSR | `omnisr` | 2024-12-28 | Medium heavy |
+| Real-ESRGAN / ESRGAN | `realesrgan`, `esrgan`, `esrgan_lite` | 2024-12-28 | Medium heavy / Medium heavy / Medium |
+| MoESR2 | `moesr2` | 2024-12-28 | Medium heavy |
+| FlexNet / MetaFlexNet | `flexnet`, `metaflexnet` | 2024-12-28 | Medium heavy |
+| SCUNet variants | `scunet`, `scunet_aaf6aa` | 2024-12-28 | Medium heavy |
+| RTMoSR variants | `rtmosr`, `rtmosr_l`, `rtmosr_ul` | 2025-01-01 | Light / Ultra light / Ultra light |
+| ArtCNN presets | `artcnn_r16f96`, `artcnn_r8f64`, `artcnn_r8f48` | 2024-12-28 | Light / Light / Ultra light |
+| PLKSR | `plksr`, `plksr_tiny` | 2024-12-28 | Light / Light |
+| RealPLKSR | `realplksr`, `realplksr_tiny` | 2024-12-28 | Medium / Light |
+| SAFMN | `safmn`, `safmn_l` | 2025-01-05 | Light / Medium |
+| Span / Span+ | `span`, `span_s`, `spanplus`, `spanplus_s`, `spanplus_st`, `spanplus_sts` | 2024-12-28 | Medium / Medium / Medium / Medium / Light / Ultra light |
+| LMLT | `lmlt_tiny`, `lmlt_base`, `lmlt_large` | 2024-12-28 | Light / Medium / Medium |
+| MAN | `man_tiny`, `man_light`, `man` | 2024-12-28 | Medium / Medium / Medium heavy |
+| EIMN | `eimn_a`, `eimn_l` | 2024-12-28 | Medium / Medium |
+| Sebica | `sebica_mini`, `sebica` | 2025-01-05 / unknown | Ultra light / Ultra light |
+| DWT | `dwt_s`, `dwt` | 2025-01-05 | Heavy / Ultra heavy |
+| RGT | `rgt_s`, `rgt` | 2024-12-28 | Medium heavy |
+
+> [!NOTE]
+> Additional registry entries (e.g., Paragon Diffusion/SR families, LKFMixer, ElysiumSR, HyperionSR, TSPAN/TemporalSpan, etc.) are also available; consult `docs/source/arch_reference.md` and the architecture registry for the full surface area.
+
+### Supported discriminators
+
+| net | option | date |
+|-----|--------|------|
+| VGGStyleDiscriminator (spectral norm) | `discriminator` | 2024-12-28 |
+| UNetDiscriminatorSN | `dis` | 2025-12-02 |
+| PatchGAN (single-scale spectral norm) | `patchgan` | 2025-06-29 |
+| PatchGAN (multiscale spectral norm) | `multiscalepatchgandiscriminatorsn` | 2025-06-29 |
+| DUnet (spectral norm U-Net) | `dunet` | 2024-12-28 |
+| MetaGAN v2 discriminator | `metagan2` | 2024-12-28 |
+
+### Supported optimizers
+
+| optimizer | option |
+|-----------|--------|
+| Adan (and fused schedule-free variant) | `Adan`, `adan` | 2025-02-27 |
+| Adan schedule free wrapper | `AdanScheduleFree` | 2025-02-27 |
+| AdamW schedule free wrapper | `AdamWScheduleFree` | 2025-02-19 |
+| PyTorch & pytorch-optimizer fallbacks | `Adam`, `AdamW`, `NAdam`, `StableAdamW`, `SOAP`, `ADOPT`, etc. | 2025-02-19 |
+
+### Supported losses
+
+| loss | option |
+|------|--------|
+| Pixel losses (L1/L2/Huber/Charbonnier) | `L1Loss`, `MSELoss`, `HuberLoss`, `CharbonnierLoss` |
+| GAN and adversarial variants | `GANLoss`, `MultiScaleGANLoss`, `R3GANLoss`, `MultiScaleR3GANLoss` |
+| Perceptual and LPIPS-family | `PerceptualLoss`, `PerceptualFP16Loss`, `PerceptualAnimeLoss`, `DINOPerceptualLoss`, `DISTSLoss`, `ADISTSLoss`, `ConvNeXtPerceptualLoss` |
+| Regularizers and TV | `TVLoss`, `AdaptiveBlockTVLoss`, `FFTLoss`, `GradientVarianceLoss`, `AdaptiveBlockTVLoss` |
+| Contrastive / contextual | `ContextualLoss`, `ContrastiveLoss`, `ConsistencyLoss`, `LineDistillerLoss` |
+| Miscellaneous specialty losses | `CheckerboardLoss`, `ColorLoss`, `FFLoss`, `LaplacianPyramidLoss`, `LDLLoss`, `HSLuvLoss`, `PSNRLoss`, `BicubicLoss`, `AverageLoss` |
+
+### Supported metrics
+
+| metric | option |
+|--------|--------|
+| PSNR (NumPy/PyTorch implementations) | `calculate_psnr`, `calculate_psnr_pt` |
+| SSIM (NumPy/PyTorch implementations) | `calculate_ssim`, `calculate_ssim_pt` |
+| Learned perceptual similarity | `calculate_lpips` |
+| DISTS | `calculate_dists` |
+| TOPIQ (full-reference and no-reference) | `calculate_topiq`, `calculate_topiq_nr` |
+
+### Supported augmentations
+
+| augmentation | option |
+|--------------|--------|
+| Random horizontal/vertical flip | `use_hflip` / `use_vflip` |
+| 90° rotations | `use_rot` |
+
+### Supported dataloaders
+
+| loader | option |
+|--------|--------|
+| Paired image/video datasets | `PairedImageDataset`, `PairedVideoDataset` |
+| Single image/video datasets (inference) | `SingleImageDataset`, `SingleVideoDataset` |
+| Real-ESRGAN degradations | `RealESRGANDataset`, `RealESRGANPairedDataset` |
+
 ## Contributing
 Please see the [contributing](https://trainner-redux.readthedocs.io/en/latest/contributing.html) page for more info on how to contribute.
 
