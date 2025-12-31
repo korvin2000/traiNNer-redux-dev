@@ -35,7 +35,7 @@ Tables below mirror the project registries so you can quickly map option strings
 | [GateRV3](https://github.com/umzi2/GaterV3) | `gaterv3`, `gaterv3_light`, `gaterv3_ultra` | 2025-06 | Light → Medium |
 | [GRL](https://arxiv.org/abs/2303.00748) | `grl`, `grl_b`, `grl_s`, `grl_t` | 2023-03 | Medium heavy |
 | [HAT](https://arxiv.org/abs/2205.04437) | `hat`, `hat_s`, `hat_xl` | 2022-05 | Ultra heavy |
-| [HiT](https://arxiv.org/abs/2407.05878) | `hit_sng`, `hit_srf`, `hit_srf_medium`, `hit_srf_large` | 2024-07 | Light → Heavy |
+| [HiT](https://arxiv.org/abs/2407.05878) | `hit_sng`, `hit_srf` (`srf_medium`, `srf_large`) | 2024-07 | Light → Heavy |
 | [LKFMixer](https://arxiv.org/abs/2508.11391) | `lkfmixer` | 2025-08 | Medium |
 | [LMLT](https://arxiv.org/abs/2409.03516) | `lmlt_base`, `lmlt_large` | 2024-09 | Medium heavy |
 | [MAN](https://arxiv.org/abs/2209.14145) | `man_light`, `man_tiny` | 2022-09 | Medium |
@@ -52,11 +52,11 @@ Tables below mirror the project registries so you can quickly map option strings
 | [RealCUGAN](https://github.com/bilibili/ailab/tree/main/Real-CUGAN) | `realcugan` | 2022-01 | Medium heavy |
 | [RealPLKSR](https://github.com/dslisleedh/PLKSR) | `realplksr`, `realplksr_large`, `realplksr_tiny` | 2024-04 | Light → Medium |
 | [SAFMN](https://arxiv.org/abs/2302.13800) | `safmn`, `safmn_l` | 2023-02 | Light → Medium |
-| [SCUNet](https://arxiv.org/abs/2203.13278) | `scunet`, `scunet_aaf6aa`, `scunet_aaf6aa_wot`, `scunet_clamp`, `scunet_esrgan`, `scunet_psnr`, `scunet_tiny` | 2022-03 | Medium |
+| [SCUNet](https://arxiv.org/abs/2203.13278) | `scunet` (`aaf6aa`, `wot`, `clamp`, `esrgan`, `snr`, `tiny`) | 2022-03 | Medium |
 | [Sebica](https://arxiv.org/abs/2410.20546) | `sebica`, `sebica_mini` | 2024-10 | Light |
 | [SeemoRe](https://arxiv.org/abs/2402.03412) | `seemore_b`, `seemore_t` | 2024-02 | Medium |
 | [SPAN](https://arxiv.org/abs/2311.12770) | `span` | 2023-11 | Ultra light |
-| [SpanPlus](https://github.com/umzi2/SPANPlus) | `spanplus`, `spanplus_s`, `spanplus_sts`, `spanplus_srep`, `spanplus_st`, `spanplus_srep_st`, `spanplus_sts_st` | 2024-08 | Ultra light |
+| [SpanPlus](https://github.com/umzi2/SPANPlus) | `spanplus` (`s`, `sts`, `srep`, `st`, `srep_st`, `sts_st`) | 2024-08 | Ultra light |
 | [SRFormer](https://arxiv.org/abs/2303.09735) | `srformer_light`, `srformer_medium` | 2023-03 | Light → Medium |
 | [SRVGGNetCompact](https://github.com/xinntao/Real-ESRGAN/blob/master/realesrgan/archs/srvgg_arch.py) | `srvggnet_compact` | — | Light |
 | [Swin2SR](https://arxiv.org/abs/2209.11345) | `swin2sr`, `swin2sr_l` | 2022-09 | Heavy |
