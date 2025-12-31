@@ -693,16 +693,17 @@ class SRModel(BaseModel):
                         gradients
                     )
 
-                    grad_norm_g = torch.linalg.vector_norm(
-                        torch.stack(
-                            [
-                                torch.linalg.vector_norm(p.grad, 2)
-                                for p in self.net_g.parameters()
-                                if p.grad is not None
-                            ]
-                        )
-                    ).detach()
-                    loss_dict["grad_norm_g"] = grad_norm_g
+                    if gradients:
+                        grad_norm_g = torch.linalg.vector_norm(
+                            torch.stack(
+                                [
+                                    torch.linalg.vector_norm(p.grad, 2)
+                                    for p in self.net_g.parameters()
+                                    if p.grad is not None
+                                ]
+                            )
+                        ).detach()
+                        loss_dict["grad_norm_g"] = grad_norm_g
 
                     if self.grad_clip:
                         # Use automation-based gradient clipping threshold if available
@@ -784,16 +785,17 @@ class SRModel(BaseModel):
                     gradients_d
                 )
 
-                grad_norm_d = torch.linalg.vector_norm(
-                    torch.stack(
-                        [
-                            torch.linalg.vector_norm(p.grad, 2)
-                            for p in self.net_d.parameters()
-                            if p.grad is not None
-                        ]
-                    )
-                ).detach()
-                loss_dict["grad_norm_d"] = grad_norm_d
+                if gradients_d:
+                    grad_norm_d = torch.linalg.vector_norm(
+                        torch.stack(
+                            [
+                                torch.linalg.vector_norm(p.grad, 2)
+                                for p in self.net_d.parameters()
+                                if p.grad is not None
+                            ]
+                        )
+                    ).detach()
+                    loss_dict["grad_norm_d"] = grad_norm_d
 
                 if self.grad_clip:
                     # Use automation-based gradient clipping threshold

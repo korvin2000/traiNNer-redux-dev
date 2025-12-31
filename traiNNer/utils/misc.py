@@ -20,6 +20,14 @@ def set_random_seed(seed: int) -> None:
     """Set random seeds."""
     random.seed(seed)
     torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    try:
+        import numpy as np
+
+        np.random.seed(seed)
+    except Exception:
+        # NumPy is optional; skip if unavailable.
+        pass
 
 
 def get_time_str() -> str:
