@@ -16,7 +16,6 @@ Tables below mirror the project registries so you can quickly map option strings
 |------|--------|------|--------|
 | [ATD](https://arxiv.org/abs/2401.08209) | `atd`, `atd_light` | 2024-01 | Heavy |
 | [ArtCNN](https://github.com/Artoriuz/ArtCNN) | `artcnn_r16f96`, `artcnn_r3f24`, `artcnn_r5f48`, `ar...n_r8f24`, `artcnn_r8f48`, `artcnn_r8f64` | 2024-11 | Ultra light → Light |
-| [AutoEncoder](https://en.wikipedia.org/wiki/Autoencoder) | `autoencoder` | — | — |
 | [CRAFT](https://arxiv.org/abs/2308.05022) | `craft` | 2023-08 | Medium |
 | [DAT](https://arxiv.org/abs/2308.03364) | `dat`, `dat_2`, `dat_light`, `dat_s` | 2023-08 | Heavy |
 | [DCTLSA](https://github.com/zengkun301/DCTLSA) | `dctlsa` | 2023 | Medium heavy |
