@@ -729,6 +729,7 @@ class SRModel(BaseModel):
             and cri_gan is not None
             and self.optimizer_d is not None
             and not skip_d_update
+            and apply_gradient
         ):
             for p in self.net_d.parameters():
                 p.requires_grad = True
@@ -779,6 +780,9 @@ class SRModel(BaseModel):
                 gradients_d = [
                     p.grad for p in self.net_d.parameters() if p.grad is not None
                 ]
+
+                # Ensure gradients are unscaled before monitoring or clipping
+                self.scaler_d.unscale_(self.optimizer_d)
 
                 # Update gradient monitoring for automation (includes discriminator)
                 suggested_threshold = self.update_automation_gradient_monitoring(
@@ -1024,9 +1028,8 @@ class SRModel(BaseModel):
                 except Exception as e:
                     logger.error(f"Failed to validate {img_name} even with tiling: {e}")
                 finally:
-                    # Restore original setting (or keep it if we want to be safe for subsequent images)
-                    # Keeping it might be safer for the rest of validation
-                    pass
+                    # Always restore the configured tile size for following images
+                    self.opt.val.tile_size = original_tile_size
             except Exception as e:
                 logger.error(f"Error during validation of {img_name}: {e}")
                 continue
