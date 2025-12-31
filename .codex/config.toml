@@ -1,6 +1,7 @@
 model = "gpt-5.2-codex-xmas"
 model_reasoning_effort = "high"
 approval_policy = "never"
+role = "engineer"
 prompt_techniques = [
     "chain of thought",
     "program of thought",
@@ -13,22 +14,29 @@ prompt_techniques = [
     "intermediate summarization",
     "priority hierarchy",
 ]
+[mode]
+persona = "senior-pytorch-engineer"
+execution = "engineer"
 
 [code]
 optimize = "speed"
 reliability = "high"
 comments = "medium"
+error_safety = "prefer-correctness"
 
 [project]
 language = "python"
+dialect = "py3.13"
 machine_learning_library = "PyTorch"
-documentation = "Markdown"
+core_packages = ["traiNNer"]
 description = "traiNNer-redux: PyTorch super-resolution/restoration training framework with registry-driven architectures, losses, and optimizers."
 entrypoints = ["train.py", "test.py", "convert_to_onnx.py"]
 schema_path = "schemas"
-options_path = "options"
+config_roots = "options"
 architecture_reference = "docs/source/arch_reference.md"
 performance_map = "architecture_categories.json"
+documentation = "Markdown"
+docs = ["docs/source", "README.md"]
 
 [formatting]
 quote-style = "double"

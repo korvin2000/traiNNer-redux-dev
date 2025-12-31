@@ -1,7 +1,7 @@
 # Codex Authoring Guidelines
 
 ## Model
-- model: gpt-5.2-codex
+- model: gpt-5.2-codex (xmas variant preferred)
 - model_reasoning_effort: high
 - approval_policy: never
 
