@@ -469,7 +469,7 @@ class SRModel(BaseModel):
         loss_dict: dict[str, Tensor | float] = OrderedDict()
 
         lq = rgb2pixelformat_pt(self.lq, self.opt.input_pixel_format)
-        self.gt = rgb2pixelformat_pt(self.gt, self.opt.input_pixel_format)
+        gt_for_loss = rgb2pixelformat_pt(self.gt, self.opt.input_pixel_format)
 
         with torch.autocast(
             device_type=self.device.type, dtype=self.amp_dtype, enabled=self.use_amp
@@ -486,7 +486,7 @@ class SRModel(BaseModel):
                 lq_target = None
 
                 # Prepare images for losses
-                real_images_unaug = self.gt.clone()
+                real_images_unaug = gt_for_loss.gt.clone()
                 fake_images_unaug = self.output.clone()
                 real_images_aug = real_images_unaug
                 fake_images_aug = fake_images_unaug
@@ -530,7 +530,7 @@ class SRModel(BaseModel):
                             if hasattr(loss, "loss_module"):  # Wrapped
                                 l_g_loss = loss(
                                     net_d=self.net_d,
-                                    real_images=self.gt,
+                                    real_images=gt_for_loss,
                                     fake_images=self.output,
                                     is_disc=False,
                                     current_iter=current_iter,
@@ -538,7 +538,7 @@ class SRModel(BaseModel):
                             else:  # Unwrapped
                                 l_g_loss = loss(
                                     net_d=self.net_d,
-                                    real_images=self.gt,
+                                    real_images=gt_for_loss,
                                     fake_images=self.output,
                                     is_disc=False,
                                 )
@@ -606,7 +606,7 @@ class SRModel(BaseModel):
                     ):
                         assert self.net_d is not None
                         _real_pred, real_feats = self.net_d.forward_with_features(
-                            self.gt
+                            gt_for_loss
                         )
                         _fake_pred, fake_feats = self.net_d.forward_with_features(
                             self.output
@@ -756,7 +756,7 @@ class SRModel(BaseModel):
                         {k: v for k, v in loss_d_dict.items() if k != "d_loss"}
                     )
                 else:
-                    real_d_pred = self.net_d(self.gt)
+                    real_d_pred = self.net_d(gt_for_loss)
                     fake_d_pred = self.net_d(self.output.detach())
                     l_d_real = loss_module(real_d_pred, True, is_disc=True)
                     l_d_fake = loss_module(fake_d_pred, False, is_disc=True)
