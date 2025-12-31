@@ -22,8 +22,16 @@ class AESOPLoss(nn.Module):
         super().__init__()
         self.loss_weight = loss_weight
         self.ae = AutoEncoder(freeze_encoder=True, freeze_decoder=True, scale=scale)
-        state_dict = self._load_state(pretrain_network_ae)
+
+        if pretrain_network_ae.endswith(".safetensors"):
+            state_dict = load_file(pretrain_network_ae)
+        else:
+            state_dict = torch.load(
+                pretrain_network_ae, map_location="cpu", weights_only=True
+            )
+
         self.ae.load_state_dict(state_dict)
+
         if criterion == "l1":
             self.criterion = L1Loss(1.0)
         elif criterion == "charbonnier":

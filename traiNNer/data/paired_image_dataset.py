@@ -131,9 +131,12 @@ class PairedImageDataset(BaseDataset):
             img_lq = img2rgb(vips_img_lq.numpy())
 
         # crop the unmatched GT images during validation or testing, especially for SR benchmark datasets
-        # TODO: It is better to update the datasets, rather than force to crop
+        
         if self.opt.phase != "train":
-            img_gt = img_gt[0 : img_lq.shape[0] * scale, 0 : img_lq.shape[1] * scale, :]
+            expected_h = img_lq.shape[0] * scale
+            expected_w = img_lq.shape[1] * scale
+            if img_gt.shape[0] != expected_h or img_gt.shape[1] != expected_w:
+                img_gt = img_gt[0:expected_h, 0:expected_w, :]
 
         # BGR to RGB, HWC to CHW, numpy to tensor
         img_gt_tensor = img2tensor(img_gt, float32=True, from_bgr=False)
