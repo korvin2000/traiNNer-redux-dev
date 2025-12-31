@@ -234,13 +234,6 @@ class BaseModel:
             )
         elif self.opt.num_gpu > 1:
             net = DataParallel(net)
-
-        if self.opt.use_compile:
-            logger = get_root_logger()
-            logger.info(
-                "Compiling network %s. This may take several minutes...", net_name
-            )
-            net = torch.compile(net, dynamic=True, mode="max-autotune")  # pyright: ignore[reportAssignmentType]
         return net
 
     def get_optimizer(
