@@ -9,36 +9,61 @@ Please see the [getting started](https://trainner-redux.readthedocs.io/en/latest
 
 ## ✨ Feature Matrix (quick reference)
 
-Tables below mirror the project registries so you can quickly map option strings to concrete implementations. The weight column follows the resource taxonomy in [`architecture_categories.json`](architecture_categories.json), and dates reflect when the implementation landed in this repository (first commit date) unless a historical paper/release date is well-established.
+Tables below mirror the project registries so you can quickly map option strings to concrete implementations. The weight column follows the resource taxonomy in [`architecture_categories.json`](architecture_categories.json), and dates reflect when the implementation landed in this repository (first commit date) unless a historical paper/release date is well-established. See also the [architecture reference](https://trainner-redux.readthedocs.io/en/latest/arch_reference.html) and [loss reference](https://trainner-redux.readthedocs.io/en/latest/loss_reference.html) for per-model parameter blocks.
 
 ### Supported architectures
 
 | arch | option | date | weight |
 |------|--------|------|--------|
-| HAT-L/HAT-M/HAT-S | `hat_l`, `hat_m`, `hat_s` | 2024-12-28 | Ultra heavy |
-| DRCT family | `drct_xl`, `drct_l`, `drct` | 2024-12-28 | Ultra heavy / Ultra heavy / Heavy |
-| DAT family | `dat`, `dat_2`, `dat_s`, `dat_light` | 2024-12-28 | Heavy / Heavy / Heavy / Heavy |
-| ATD variants | `atd`, `atd_light` | 2024-12-28 | Heavy / Heavy |
-| SwinIR | `swinir_l`, `swinir_m`, `swinir_s` | 2024-12-28 | Heavy / Medium heavy / Medium heavy |
-| Swin2SR | `swin2sr_l`, `swin2sr_m`, `swin2sr_s` | 2024-12-28 | Heavy / Heavy / Medium heavy |
-| SRFormer | `srformer`, `srformer_light` | 2024-12-28 | Heavy / Medium heavy |
-| OmniSR | `omnisr` | 2024-12-28 | Medium heavy |
-| Real-ESRGAN / ESRGAN | `realesrgan`, `esrgan`, `esrgan_lite` | 2024-12-28 | Medium heavy / Medium heavy / Medium |
-| MoESR2 | `moesr2` | 2024-12-28 | Medium heavy |
-| FlexNet / MetaFlexNet | `flexnet`, `metaflexnet` | 2024-12-28 | Medium heavy |
-| SCUNet variants | `scunet`, `scunet_aaf6aa` | 2024-12-28 | Medium heavy |
-| RTMoSR variants | `rtmosr`, `rtmosr_l`, `rtmosr_ul` | 2025-01-01 | Light / Ultra light / Ultra light |
-| ArtCNN presets | `artcnn_r16f96`, `artcnn_r8f64`, `artcnn_r8f48` | 2024-12-28 | Light / Light / Ultra light |
-| PLKSR | `plksr`, `plksr_tiny` | 2024-12-28 | Light / Light |
-| RealPLKSR | `realplksr`, `realplksr_tiny` | 2024-12-28 | Medium / Light |
-| SAFMN | `safmn`, `safmn_l` | 2025-01-05 | Light / Medium |
-| Span / Span+ | `span`, `span_s`, `spanplus`, `spanplus_s`, `spanplus_st`, `spanplus_sts` | 2024-12-28 | Medium / Medium / Medium / Medium / Light / Ultra light |
-| LMLT | `lmlt_tiny`, `lmlt_base`, `lmlt_large` | 2024-12-28 | Light / Medium / Medium |
-| MAN | `man_tiny`, `man_light`, `man` | 2024-12-28 | Medium / Medium / Medium heavy |
-| EIMN | `eimn_a`, `eimn_l` | 2024-12-28 | Medium / Medium |
-| Sebica | `sebica_mini`, `sebica` | 2025-01-05 / unknown | Ultra light / Ultra light |
-| DWT | `dwt_s`, `dwt` | 2025-01-05 | Heavy / Ultra heavy |
-| RGT | `rgt_s`, `rgt` | 2024-12-28 | Medium heavy |
+| ATD | `atd`, `atd_light` | 2025-11-29 | Heavy |
+| ArtCNN | `artcnn_r16f96`, `artcnn_r3f24`, `artcnn_r5f48`, `artcnn_r8f24`, `artcnn_r8f48`, `artcnn_r8f64` | 2025-11-29 | Ultra light → Light |
+| AutoEncoder | `autoencoder` | 2025-11-29 | — |
+| CRAFT | `craft` | 2025-11-29 | Medium |
+| DAT | `dat`, `dat_2`, `dat_light`, `dat_s` | 2025-11-29 | Heavy |
+| DCTLSA | `dctlsa` | 2025-11-29 | Medium heavy |
+| DIS | `dis_balanced`, `dis_fast` | 2025-12-02 | — |
+| DITN_Real | `ditn_real` | 2025-11-29 | Medium |
+| DRCT | `drct`, `drct_l`, `drct_xl` | 2025-11-29 | Heavy → Ultra heavy |
+| DWT | `dwt`, `dwt_s` | 2025-11-29 | Heavy → Ultra heavy |
+| EIMN | `eimn_a`, `eimn_l` | 2025-11-29 | Medium |
+| ELAN | `elan`, `elan_light` | 2025-11-29 | Medium heavy |
+| EMT | `emt` | 2025-11-29 | Medium heavy |
+| ESCRealM | `escrealm`, `escrealm_xl` | 2025-11-29 | — |
+| FDAT | `fdat`, `fdat_large`, `fdat_light`, `fdat_medium`, `fdat_tiny`, `fdat_xl` | 2025-11-29 | — |
+| FlexNet | `flexnet`, `metaflexnet` | 2025-11-29 | Medium heavy |
+| GateRV3 | `gaterv3`, `gaterv3_r`, `gaterv3_s` | 2025-11-29 | — |
+| GRL | `grl_t`, `grl_s`, `grl_b` | 2025-11-29 | Ultra heavy |
+| HAT | `hat_l`, `hat_m`, `hat_s` | 2025-11-29 | Ultra heavy |
+| HiT | `hit_sir`, `hit_sng`, `hit_srf` | 2025-11-29 | Medium heavy |
+| LKFMixer | `lkfmixer_t`, `lkfmixer_b`, `lkfmixer_l` | 2025-11-27 | — |
+| LMLT | `lmlt_tiny`, `lmlt_base`, `lmlt_large` | 2025-11-29 | Light → Medium |
+| MAN | `man_tiny`, `man_light`, `man` | 2025-11-29 | Medium → Medium heavy |
+| MetaGAN3 | `metagan3` | 2025-11-29 | — |
+| MoESR2 | `moesr2` | 2025-11-29 | Medium heavy |
+| MoSR | `mosr`, `mosr_t` | 2025-11-29 | Light → Medium |
+| MoSRv2 | `mosrv2` | 2025-11-29 | — |
+| OmniSR | `omnisr` | 2025-11-29 | Medium heavy |
+| PLKSR | `plksr`, `plksr_tiny` | 2025-11-29 | Light |
+| RCAN | `rcan`, `rcan_l`, `rcan_unshuffle` | 2025-11-29 | Medium |
+| RGT | `rgt`, `rgt_s` | 2025-11-29 | — |
+| RRDBNet / ESRGAN | `esrgan`, `esrgan_lite` | 2025-11-29 | Medium → Medium heavy |
+| RTMoSR | `rtmosr`, `rtmosr_l`, `rtmosr_ul` | 2025-11-29 | Ultra light → Light |
+| RealCUGAN | `realcugan` | 2025-11-29 | Medium heavy |
+| RealPLKSR | `realplksr`, `realplksr_large`, `realplksr_tiny` | 2025-11-29 | Light → Medium |
+| SAFMN | `safmn`, `safmn_l` | 2025-11-29 | Light → Medium |
+| SCUNet_aaf6aa | `scunet_aaf6aa` | 2025-11-29 | Medium heavy |
+| SPAN | `span`, `span_f32`, `span_f64`, `span_f96`, `span_s` | 2025-11-29 | Medium |
+| SRFormer | `srformer`, `srformer_light` | 2025-11-29 | Medium heavy → Heavy |
+| SRVGGNetCompact | `compact`, `ultracompact`, `superultracompact` | 2025-11-29 | Ultra light |
+| Sebica | `sebica`, `sebica_mini` | 2025-11-29 | Ultra light |
+| SeemoRe | `seemore_t` | 2025-11-29 | Light |
+| SpanPlus | `spanplus`, `spanplus_s`, `spanplus_st`, `spanplus_sts` | 2025-11-29 | Ultra light → Medium |
+| Swin2SR | `swin2sr_l`, `swin2sr_m`, `swin2sr_s` | 2025-11-29 | Medium heavy → Heavy |
+| SwinIR | `swinir_l`, `swinir_m`, `swinir_s` | 2025-11-29 | Medium heavy → Heavy |
+| TSCUNet | `tscunet` | 2025-11-29 | — |
+| TemporalSPAN | `temporalspan` | 2025-11-29 | — |
+| TSPANv2 | `temporalspanv2` | 2025-11-18 | — |
+| Unet (segmentation) | `unetsegmentation` | 2025-11-29 | — |
 
 > [!NOTE]
 > Additional registry entries (e.g., Paragon Diffusion/SR families, LKFMixer, ElysiumSR, HyperionSR, TSPAN/TemporalSpan, etc.) are also available; consult `docs/source/arch_reference.md` and the architecture registry for the full surface area.
@@ -47,32 +72,42 @@ Tables below mirror the project registries so you can quickly map option strings
 
 | net | option | date |
 |-----|--------|------|
-| VGGStyleDiscriminator (spectral norm) | `discriminator` | 2024-12-28 |
-| UNetDiscriminatorSN | `dis` | 2025-12-02 |
-| PatchGAN (single-scale spectral norm) | `patchgan` | 2025-06-29 |
-| PatchGAN (multiscale spectral norm) | `multiscalepatchgandiscriminatorsn` | 2025-06-29 |
-| DUnet (spectral norm U-Net) | `dunet` | 2024-12-28 |
-| MetaGAN v2 discriminator | `metagan2` | 2024-12-28 |
+| VGGStyleDiscriminator (spectral norm) | `vggstylediscriminator` | 2025-11-29 |
+| UNetDiscriminatorSN | `unetdiscriminatorsn` | 2025-11-29 |
+| PatchGAN (single-scale spectral norm) | `patchgandiscriminatorsn` | 2025-11-29 |
+| PatchGAN (multiscale spectral norm) | `multiscalepatchgandiscriminatorsn` | 2025-11-29 |
+| DUnet (spectral norm U-Net) | `dunet` | 2025-11-29 |
+| MetaGAN v2 discriminator | `metagan2` | 2025-11-29 |
 
 ### Supported optimizers
 
 | optimizer | option |
 |-----------|--------|
-| Adan (and fused schedule-free variant) | `Adan`, `adan` | 2025-02-27 |
-| Adan schedule free wrapper | `AdanScheduleFree` | 2025-02-27 |
-| AdamW schedule free wrapper | `AdamWScheduleFree` | 2025-02-19 |
-| PyTorch & pytorch-optimizer fallbacks | `Adam`, `AdamW`, `NAdam`, `StableAdamW`, `SOAP`, `ADOPT`, etc. | 2025-02-19 |
+| Adan + fused/schedule-free variants | `adan`, `adanschedulefree` | 2025-11-29 |
+| AdamW schedule free wrapper | `adamwschedulefree` | 2025-11-29 |
+| PyTorch & pytorch-optimizer fallbacks | `adam`, `adamw`, `nadam`, `stableadamw`, `soap`, `adopt`, etc. | 2025-11-29 |
+| LR schedulers (via `train.scheduler.type`) | Any torch scheduler name with kwargs | — |
 
 ### Supported losses
 
 | loss | option |
 |------|--------|
-| Pixel losses (L1/L2/Huber/Charbonnier) | `L1Loss`, `MSELoss`, `HuberLoss`, `CharbonnierLoss` |
-| GAN and adversarial variants | `GANLoss`, `MultiScaleGANLoss`, `R3GANLoss`, `MultiScaleR3GANLoss` |
-| Perceptual and LPIPS-family | `PerceptualLoss`, `PerceptualFP16Loss`, `PerceptualAnimeLoss`, `DINOPerceptualLoss`, `DISTSLoss`, `ADISTSLoss`, `ConvNeXtPerceptualLoss` |
-| Regularizers and TV | `TVLoss`, `AdaptiveBlockTVLoss`, `FFTLoss`, `GradientVarianceLoss`, `AdaptiveBlockTVLoss` |
-| Contrastive / contextual | `ContextualLoss`, `ContrastiveLoss`, `ConsistencyLoss`, `LineDistillerLoss` |
-| Miscellaneous specialty losses | `CheckerboardLoss`, `ColorLoss`, `FFLoss`, `LaplacianPyramidLoss`, `LDLLoss`, `HSLuvLoss`, `PSNRLoss`, `BicubicLoss`, `AverageLoss` |
+| Pixel / distortion | `l1loss`, `mseloss`, `charbonnierloss` |
+| Structural | `ssimloss`, `mssimloss`, `msssiml1loss` |
+| Perceptual | `perceptualloss`, `perceptualfp16loss`, `perceptualanimeloss`, `distsloss`, `adistsloss` |
+| GAN and adversarial variants | `ganloss`, `multiscaleganloss` |
+| Frequency / texture | `fftloss`, `ffloss` |
+| Regularizers | `gradientvarianceloss`, `fliploss` |
+| Color | `colorloss`, `hsluvloss`, `lumaloss` |
+| Geometry / alignment | `nccloss` |
+| Similarity | `cosimloss` |
+| Contextual / contrastive | `contextualloss` |
+| Downscale consistency | `bicubicloss` |
+| Quality proxy | `psnrloss` |
+| Distillation / edges | `linedistillerloss` |
+| Distribution / classification | `ldlloss` |
+| Segmentation | `bcewithlogitsdiceloss` |
+| Composite | `averageloss`, `aesoploss` |
 
 ### Supported metrics
 
@@ -90,6 +125,11 @@ Tables below mirror the project registries so you can quickly map option strings
 |--------------|--------|
 | Random horizontal/vertical flip | `use_hflip` / `use_vflip` |
 | 90° rotations | `use_rot` |
+| Mixture of Augmentations (MoA) | `use_moa`, `moa_augs`, `moa_probs`, `moa_debug`, `moa_debug_limit` |
+| Real-ESRGAN style on-the-fly degradations | `blur_prob`, `resize_prob`, `gaussian_noise_prob`, `jpeg_prob` (+ `*_range`/`*_list`/`*_prob` controls) |
+| Second-stage & high-order degradations | `blur_prob2`, `resize_prob2`, `gaussian_noise_prob2`, `jpeg_prob2`, `high_order_degradations` |
+| Sharpening (LQ USM) | `lq_usm`, `lq_usm_radius_range` |
+| OTF queue sizing | `queue_size` |
 
 ### Supported dataloaders
 
