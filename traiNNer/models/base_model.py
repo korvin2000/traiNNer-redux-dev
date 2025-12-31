@@ -850,15 +850,25 @@ class BaseModel:
                 assert self.opt.world_size is not None
                 keys = []
                 losses = []
+                passthrough: dict[str, Any] = {}
                 for name, value in loss_dict.items():
-                    if isinstance(value, Tensor):  # TODO
+                    if isinstance(value, Tensor):
                         keys.append(name)
                         losses.append(value)
-                losses = torch.stack(losses, 0)
-                torch.distributed.reduce(losses, dst=0)  # type: ignore
-                if self.opt.rank == 0:
-                    losses /= self.opt.world_size
-                loss_dict = dict(zip(keys, losses, strict=False))
+                    elif isinstance(value, (float, int)):
+                        keys.append(name)
+                        losses.append(torch.tensor(value, device=self.device))
+                    else:
+                        passthrough[name] = value
+
+                if losses:
+                    losses = torch.stack(losses, 0)
+                    torch.distributed.reduce(losses, dst=0)  # type: ignore
+                    if self.opt.rank == 0:
+                        losses /= self.opt.world_size
+                    loss_dict = dict(zip(keys, losses, strict=False))
+                if passthrough:
+                    loss_dict.update(passthrough)
 
             return loss_dict
 

@@ -1,5 +1,6 @@
 from typing import Literal
 
+import torch
 from safetensors.torch import load_file
 from torch import Tensor, nn
 
@@ -21,15 +22,24 @@ class AESOPLoss(nn.Module):
         super().__init__()
         self.loss_weight = loss_weight
         self.ae = AutoEncoder(freeze_encoder=True, freeze_decoder=True, scale=scale)
-        self.ae.load_state_dict(
-            load_file(pretrain_network_ae)
-        )  # TODO wrapper function to support pth/safetensors
+        state_dict = self._load_state(pretrain_network_ae)
+        self.ae.load_state_dict(state_dict)
         if criterion == "l1":
             self.criterion = L1Loss(1.0)
         elif criterion == "charbonnier":
             self.criterion = charbonnier_loss
         else:
             self.criterion = MSSSIML1Loss(1.0)
+
+    @staticmethod
+    def _load_state(path: str) -> dict:
+        if path.endswith(".safetensors"):
+            return load_file(path)
+
+        ckpt = torch.load(path, map_location="cpu", weights_only=True)
+        if isinstance(ckpt, dict) and "params" in ckpt:
+            return ckpt["params"]
+        return ckpt
 
     def forward(self, sr: Tensor, hr: Tensor) -> Tensor:
         ae_sr = self.ae(sr)
