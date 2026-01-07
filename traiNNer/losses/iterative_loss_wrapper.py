@@ -172,6 +172,7 @@ class IterativeLossWrapper(nn.Module):
         if (
             self.warn_on_unused
             and effective_weight < 1e-6
+            and current_iter >= self.start_iter
             and not self._has_warned_unused
         ):
             warnings.warn(

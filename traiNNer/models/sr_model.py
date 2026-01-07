@@ -498,6 +498,13 @@ class SRModel(BaseModel):
                 # First pass: compute all losses without dynamic weighting
                 raw_losses = {}
                 for label, loss in self.losses.items():
+                    # Skip inactive iterative losses until their schedule starts
+                    if hasattr(loss, "is_active") and not loss.is_active(current_iter):
+                        raw_losses[label] = torch.tensor(0.0, device=self.output.device)
+                        if label == "l_g_gan":
+                            skip_d_update = True
+                        continue
+
                     target = real_images_aug
 
                     if loss.loss_weight < 0:
@@ -724,10 +731,15 @@ class SRModel(BaseModel):
 
         # --- DISCRIMINATOR UPDATE ---
         cri_gan = self.losses.get("l_g_gan")
+        gan_active = True
+        if cri_gan is not None and hasattr(cri_gan, "is_active"):
+            gan_active = cri_gan.is_active(current_iter)
+
         if (
             self.net_d is not None
             and cri_gan is not None
             and self.optimizer_d is not None
+            and gan_active
             and not skip_d_update
             and apply_gradient
         ):
