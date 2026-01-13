@@ -60,6 +60,12 @@ class SafeGradientPenalty:
         if isinstance(out, (list, tuple)):
             out = out[-1]
 
+        # PatchGAN / U-Net discriminators can return maps; reduce to a per-sample scalar
+        # before computing gradients so the penalty magnitude does not scale with H*W.
+        if out.ndim > 1:
+            reduce_dims = tuple(range(1, out.ndim))
+            out = out.mean(dim=reduce_dims)
+
         # Preferred: compute grads with create_graph=True so penalty backprops to net params
         try:
             grads = torch.autograd.grad(
@@ -120,6 +126,8 @@ class R3GANLoss(nn.Module):
         fake_label_val: float = 0.0,
         r1_weight: float = 3.0,
         r2_weight: float = 3.0,
+        reg_interval: int = 4,
+        gp_crop: int = 96,
         use_relu: bool = False,  # kept for API compatibility
     ) -> None:
         super().__init__()
@@ -129,6 +137,10 @@ class R3GANLoss(nn.Module):
         self.fake_label_val = fake_label_val
         self.r1_weight = float(r1_weight)
         self.r2_weight = float(r2_weight)
+        self.reg_interval = int(reg_interval)
+        self.gp_crop = int(gp_crop)
+        # Track how many discriminator calls have happened to lazily apply GP.
+        self.register_buffer("_gp_step", torch.zeros((), dtype=torch.long))
         self.safe_grad_penalty = SafeGradientPenalty()
         self.loss: nn.Module | None = None
         self.loss_func: Callable[..., Tensor] | None = None
@@ -187,6 +199,19 @@ class R3GANLoss(nn.Module):
     # ------------------------------------------------------------------ #
     # Relativistic hinge (R3GAN)
     # ------------------------------------------------------------------ #
+    @staticmethod
+    def _maybe_random_crop(images: Tensor, crop: int) -> Tensor:
+        if crop is None or crop <= 0:
+            return images
+
+        _, _, h, w = images.shape
+        if h <= crop or w <= crop:
+            return images
+
+        top = int(torch.randint(0, h - crop + 1, (1,), device=images.device).item())
+        left = int(torch.randint(0, w - crop + 1, (1,), device=images.device).item())
+        return images[..., top : top + crop, left : left + crop]
+
     def _compute_discriminator_loss_with_grad_penalty(
         self,
         net_d: nn.Module,
@@ -196,6 +221,8 @@ class R3GANLoss(nn.Module):
         # but penalties should be computed on unaugmented images when available.
         real_images_unaug: Tensor | None,
         fake_images_unaug: Tensor | None,
+        real_images: Tensor,
+        fake_images: Tensor,
     ) -> dict[str, Tensor]:
         # Handle lists (multi-scale outputs)
         if isinstance(real_output, (list, tuple)):
@@ -211,11 +238,31 @@ class R3GANLoss(nn.Module):
         fake_term = F.relu(1.0 + (fake_output - fake_mean)).mean()
         adv_loss = 0.5 * (real_term + fake_term)
 
+        with torch.no_grad():
+            self._gp_step.add_(1)
+
+        # Lazy gradient penalty: skip expensive autograd.grad except every reg_interval steps.
+        apply_gp = bool(
+            self.reg_interval <= 1
+            or (self._gp_step % self.reg_interval == 0).item()
+        )
+
+        if not apply_gp or (self.r1_weight <= 0 and self.r2_weight <= 0):
+            zero_penalty = torch.zeros(
+                (), device=real_output.device, dtype=real_output.dtype
+            )
+            return {
+                "d_loss": adv_loss,
+                "r1_penalty": zero_penalty,
+                "r2_penalty": zero_penalty,
+                "gp_applied": zero_penalty,
+            }
+
         # R1 / R2 penalties: prefer unaugmented images to avoid grid_sample second-derivative issues
         if real_images_unaug is None or fake_images_unaug is None:
             warnings.warn(
                 "R3GANLoss: real_images_unaug or fake_images_unaug is None. "
-                "Gradient penalties will be computed on the provided (possibly augmented) images. "
+                "Gradient penalties will fall back to augmented images. "
                 "This can trigger errors if augmentations use ops without second-derivatives "
                 "(e.g., grid_sampler). Recommended: pass unaugmented images via "
                 "real_images_unaug/fake_images_unaug.",
@@ -225,46 +272,40 @@ class R3GANLoss(nn.Module):
                 "R3GANLoss called without unaugmented images for gradient penalties."
             )
 
-        # Compute R1 on unaug if available else on provided images
-        r1_target = (
-            real_images_unaug if real_images_unaug is not None else real_output.detach()
-        )
-        # But compute penalty using input images (tensors) — ensure we pass image tensors to helper
         r1_images_for_penalty = (
-            real_images_unaug if real_images_unaug is not None else None
+            real_images_unaug if real_images_unaug is not None else real_images
+        )
+        r2_images_for_penalty = (
+            fake_images_unaug if fake_images_unaug is not None else fake_images
         )
 
-        # R1
-        if self.r1_weight > 0:
-            if r1_images_for_penalty is None:
-                # if we don't have an image tensor, fall back to computing grads w.r.t. real_output
-                # (less common) — here we compute no penalty and warn.
-                warnings.warn(
-                    "R3GANLoss: cannot compute R1 penalty because no real image tensor is available.",
-                    stacklevel=2,
-                )
-                r1_penalty = torch.tensor(0.0, device=real_output.device)
-            else:
-                r1_penalty = self.safe_grad_penalty.compute_grad_penalty(
-                    net_d, r1_images_for_penalty, self.r1_weight
-                )
-        else:
-            r1_penalty = torch.tensor(0.0, device=real_output.device)
+        # Scale penalties when applied lazily so the expected penalty strength matches
+        # every-step training.
+        eff_r1_weight = self.r1_weight * max(self.reg_interval, 1)
+        eff_r2_weight = self.r2_weight * max(self.reg_interval, 1)
 
-        # R2
-        if self.r2_weight > 0:
-            if fake_images_unaug is None:
-                warnings.warn(
-                    "R3GANLoss: cannot compute R2 penalty because no fake image tensor is available.",
-                    stacklevel=2,
-                )
-                r2_penalty = torch.tensor(0.0, device=fake_output.device)
-            else:
-                r2_penalty = self.safe_grad_penalty.compute_grad_penalty(
-                    net_d, fake_images_unaug, self.r2_weight
-                )
+        if self.gp_crop and r1_images_for_penalty is not None:
+            r1_images_for_penalty = self._maybe_random_crop(
+                r1_images_for_penalty, self.gp_crop
+            )
+        if self.gp_crop and r2_images_for_penalty is not None:
+            r2_images_for_penalty = self._maybe_random_crop(
+                r2_images_for_penalty, self.gp_crop
+            )
+
+        if self.r1_weight > 0:
+            r1_penalty = self.safe_grad_penalty.compute_grad_penalty(
+                net_d, r1_images_for_penalty, eff_r1_weight
+            )
         else:
-            r2_penalty = torch.tensor(0.0, device=fake_output.device)
+            r1_penalty = torch.zeros((), device=real_output.device, dtype=real_output.dtype)
+
+        if self.r2_weight > 0:
+            r2_penalty = self.safe_grad_penalty.compute_grad_penalty(
+                net_d, r2_images_for_penalty, eff_r2_weight
+            )
+        else:
+            r2_penalty = torch.zeros((), device=fake_output.device, dtype=fake_output.dtype)
 
         total_loss = adv_loss + 0.5 * (r1_penalty + r2_penalty)
 
@@ -272,6 +313,9 @@ class R3GANLoss(nn.Module):
             "d_loss": total_loss,
             "r1_penalty": r1_penalty,
             "r2_penalty": r2_penalty,
+            "gp_applied": torch.tensor(
+                1.0, device=real_output.device, dtype=real_output.dtype
+            ),
         }
 
     def _compute_generator_loss(
@@ -326,6 +370,8 @@ class R3GANLoss(nn.Module):
                 fake_output,
                 real_images_unaug,
                 fake_images_unaug,
+                real_images,
+                fake_images,
             )
         else:
             return self._compute_generator_loss(real_output, fake_output)
