@@ -329,18 +329,21 @@ class DepthwiseGaussianBlur(nn.Module):
         w_h = g.view(1, 1, self.kernel_size, 1).repeat(self.channels, 1, 1, 1)  # (C,1,k,1)
         w_w = g.view(1, 1, 1, self.kernel_size).repeat(self.channels, 1, 1, 1)  # (C,1,1,k)
 
-        # Not learnable; don't need to save in state_dict.
-        self.w_h = nn.Parameter(w_h, requires_grad=False)
-        self.w_w = nn.Parameter(w_w, requires_grad=False)
+        # Not learnable; don\'t save in state_dict (EMA/DDP friendly).
+        self.register_buffer("w_h", w_h, persistent=False)
+        self.register_buffer("w_w", w_w, persistent=False)
+        # Cache casted weights to avoid per-forward allocations under AMP.
+        self._cast_cache = {}  # key: (device, dtype) -> (w_h, w_w)
 
     def forward(self, x: Tensor) -> Tensor:
-        # Cast only if needed (avoids per-forward copies in the common case).
-        w_h = self.w_h
-        w_w = self.w_w
-        if w_h.device != x.device or w_h.dtype != x.dtype:
-            w_h = w_h.to(device=x.device, dtype=x.dtype)
-        if w_w.device != x.device or w_w.dtype != x.dtype:
-            w_w = w_w.to(device=x.device, dtype=x.dtype)
+        key = (x.device, x.dtype)
+        cached = self._cast_cache.get(key, None)
+        if cached is None:
+            w_h = self.w_h.to(device=x.device, dtype=x.dtype)
+            w_w = self.w_w.to(device=x.device, dtype=x.dtype)
+            self._cast_cache[key] = (w_h, w_w)
+        else:
+            w_h, w_w = cached
 
         x = F.conv2d(x, w_h, padding=(self.pad, 0), groups=self.channels)
         x = F.conv2d(x, w_w, padding=(0, self.pad), groups=self.channels)
@@ -366,11 +369,17 @@ class HybridFreqSplit(nn.Module):
         # Learnable HF scale (stable start at 0)
         self.hf_scale = nn.Parameter(torch.zeros(1, channels, 1, 1))
         self.lift = nn.Conv2d(channels, channels, 1, bias=True)
+        # Prevent bias from injecting constant HF when hf_scale==0.
+        nn.init.zeros_(self.lift.bias)
+        # Init lift as identity (safe, predictable).
+        nn.init.zeros_(self.lift.weight)
+        with torch.no_grad():
+            for i in range(channels):
+                self.lift.weight[i, i, 0, 0] = 1.0
 
     def forward(self, x: Tensor) -> Tuple[Tensor, Tensor]:
         low = self.blur(x)
-        high = (x - low) * self.hf_scale
-        high = self.lift(high)
+        high = self.lift(x - low) * self.hf_scale
         return low, high
 
 
@@ -471,7 +480,9 @@ class SparseTopKMoE(nn.Module):
         self.scale = nn.Parameter(torch.zeros(1))
 
         # Exposed stats for training loops
-        self.last_aux_loss: Optional[Tensor] = None  # for trainer (not a buffer)
+        # last_aux_loss keeps graph when aux_loss_weight>0 and training; consume via model.get_aux_loss(clear=True)
+        self.last_aux_loss: Optional[Tensor] = None
+        self.last_aux_loss_detached: Optional[Tensor] = None  # for logging
 
     def _compute_aux(self, logits: Tensor, topi: Tensor) -> Tensor:
         """
@@ -509,9 +520,13 @@ class SparseTopKMoE(nn.Module):
         topv, topi = logits.topk(self.top_k, dim=-1)  # (B, N, K)
         wts = F.softmax(topv, dim=-1)  # (B, N, K)
 
-        # Expose aux loss for external training code
+        # Expose aux loss for external training code (REAL grads when enabled)
         aux = self._compute_aux(logits, topi)
-        self.last_aux_loss = aux.detach()
+        self.last_aux_loss_detached = aux.detach()
+        if self.training and self.aux_loss_weight > 0:
+            self.last_aux_loss = aux * self.aux_loss_weight
+        else:
+            self.last_aux_loss = None
 
         out = torch.zeros_like(tokens)
         for e_idx, expert in enumerate(self.experts):
@@ -862,13 +877,13 @@ class DySample(nn.Module):
             self.end_conv = nn.Conv2d(
                 in_channels, out_ch, end_kernel, 1, end_kernel // 2
             )
-        self.offset = nn.Conv2d(in_channels, out_channels, 1)
+        self.offset = nn.Conv2d(in_channels, out_channels, 1, bias=True)
         self.scope = nn.Conv2d(in_channels, out_channels, 1, bias=False)
-        if self.training:
-            nn.init.trunc_normal_(self.offset.weight, std=0.02)
-            nn.init.constant_(self.scope.weight, val=0)
-
-        self.init_pos = nn.Parameter(self._init_pos(), requires_grad=False)
+        # Start close to identity sampling: offset==0, scope==0 => stable & smooth early training.
+        nn.init.zeros_(self.offset.weight)
+        nn.init.zeros_(self.offset.bias)
+        nn.init.zeros_(self.scope.weight)
+        self.register_buffer("init_pos", self._init_pos(), persistent=False)
 
     def _init_pos(self) -> Tensor:
         h = torch.arange((-self.scale + 1) / 2, (self.scale - 1) / 2 + 1) / self.scale
@@ -881,22 +896,19 @@ class DySample(nn.Module):
 
     def forward(self, x: Tensor) -> Tensor:
         offset = self.offset(x) * self.scope(x).sigmoid() * 0.5 + self.init_pos
+        offset = offset.float()
         B, _, H, W = offset.shape
         offset = offset.view(B, 2, -1, H, W)
-        coords_h = torch.arange(H) + 0.5
-        coords_w = torch.arange(W) + 0.5
+        coords_h = torch.arange(H, device=x.device, dtype=torch.float32) + 0.5
+        coords_w = torch.arange(W, device=x.device, dtype=torch.float32) + 0.5
 
         coords = (
             torch.stack(torch.meshgrid([coords_w, coords_h], indexing="ij"))
             .transpose(1, 2)
             .unsqueeze(1)
             .unsqueeze(0)
-            .type(x.dtype)
-            .to(x.device, non_blocking=True)
         )
-        normalizer = torch.tensor(
-            [W, H], dtype=x.dtype, device=x.device, pin_memory=True
-        ).view(1, 2, 1, 1, 1)
+        normalizer = torch.tensor([W, H], dtype=torch.float32, device=x.device).view(1, 2, 1, 1, 1)
         coords = 2 * (coords + offset) / normalizer - 1
 
         coords = (
@@ -996,7 +1008,7 @@ class HyFreqMoE_SR3(nn.Module):
         moe_router_noise: float = 0.0,
         moe_aux_weight: float = 0.0,
         noise_warmup: int = 4000,
-        upsampler: str = "dysample",
+        upsampler: str = "pixelshuffle",
         dysample_groups: int = 4,
     ) -> None:
         super().__init__()
@@ -1049,11 +1061,19 @@ class HyFreqMoE_SR3(nn.Module):
         # Exposed aux loss (MoE)
         self._last_aux_loss: Optional[Tensor] = None  # EMA-safe (not a buffer)
 
-    def get_aux_loss(self) -> Tensor:
-        """Return the last MoE auxiliary loss (0 if disabled or not run)."""
+    def get_aux_loss(self, clear: bool = True) -> Tensor:
+        """
+        Return the last MoE auxiliary loss (0 if disabled or not run).
+        By default clears internal reference to avoid retaining autograd graph.
+        """
         if self._last_aux_loss is None:
             return torch.zeros((), device=next(self.parameters()).device)
-        return self._last_aux_loss
+        aux = self._last_aux_loss
+        if clear:
+            self._last_aux_loss = None
+            if hasattr(self, "token_moe"):
+                self.token_moe.last_aux_loss = None
+        return aux
 
     @torch.no_grad()
     def switch_to_deploy(self) -> None:
@@ -1092,6 +1112,6 @@ class HyFreqMoE_SR3(nn.Module):
         d1 = self.texture_head(d1)
 
         out = self.head(d1)
-        if self.scale == 1:
+        if self.scale == 1 and out.shape == inp.shape:
             out = out + inp
         return out
