@@ -30,6 +30,10 @@ High-level flow in traiNNer-redux:
 
 **Implication:** the generator only needs a standard `forward(lq)`; the trainer handles AMP, EMA, tiling, logging, datasets, and checkpoints.
 
+### 0.2 The scale contract is wired into dataset setup
+
+Training dataloaders derive `gt_size` and `lq_size` from the **top-level** `scale` and explicitly require exactly one of those sizes to be defined. Your architecture must respect that `scale` value (e.g., output size must be `H*scale, W*scale` for SR). 
+
 ---
 
 ## 1) Registration & Auto-Discovery (ARCH_REGISTRY)
@@ -66,6 +70,10 @@ def my_generator(**opt):
 If the framework uses auto-import scanning (common in BasicSR-derived repos), the architecture file should end with `_arch.py`. BasicSR-Examples explicitly calls this out. [GitHub](https://github.com/xinntao/BasicSR-examples)
 
 **Rule:** put your file under `traiNNer/archs/` and name it `*_arch.py`, because traiNNer-redux auto-imports every file ending in `_arch.py` from that folder at startup. 【F:traiNNer/archs/__init__.py†L11-L25】
+
+### 1.2.2 Registry routing is not optional in traiNNer-redux
+
+Because `build_network()` only uses the registry lookups (SPANDREL → ARCH → TESTARCH), **direct class imports are not used**. If your class is not registered, it will not be instantiated by YAML.
 
 ### 1.3 YAML usage
 
@@ -133,13 +141,19 @@ It should **not**:
 
 In traiNNer-redux, `scale` is a **top-level config option** (not necessarily inside `network_g`). [TraiNNer-Redux](https://trainner-redux.readthedocs.io/en/latest/config_reference.html)
 
+`SRModel` injects the top-level `scale` into `network_g` kwargs (even if the YAML does not list it), so the constructor must accept it without error.
+
 **Best practice:** treat each model instance as a single fixed scale:
 
 ```text
 pythonself.scale = int(opt.get("scale", opt.get("upscale", 4)))
 ```
 
-**Why:** traiNNer-redux derives training crop sizes using the **top-level** `scale`, and uses that same scale in tiled inference. Mismatched `scale` in your architecture will desynchronize dataset sizes and outputs. 【F:train.py†L73-L121】【F:traiNNer/models/sr_model.py†L849-L919】
+**Why:** traiNNer-redux derives training crop sizes using the **top-level** `scale`, and uses that same scale in tiled inference. Mismatched `scale` in your architecture will desynchronize dataset sizes and outputs. 
+
+### 2.3.2 Preserve train/test model expectations (SRModel contract)
+
+`SRModel` builds the generator with `build_network({**opt.network_g, "scale": opt.scale})` and will **always** call it as a standard module. It does not pass additional arguments to `forward`, so any optional inputs must be computed internally or handled by a wrapper.
 
 ### 2.4 Variants are commonly registered as factory functions
 
@@ -225,6 +239,12 @@ If your model can accept non-RGB inputs, **bind it to explicit `num_in_ch`/`in_c
 
 Training and validation wrap `net_g(lq)` with `torch.autocast`, and `use_amp`/`amp_bf16` are standard config toggles. Ensure your layers and custom ops are AMP-safe. Avoid integer-only ops that silently upcast or unsupported dtypes. 【F:traiNNer/models/sr_model.py†L462-L491】【F:options/_templates/train/RCAN/RCAN_fidelity.yml†L1-L22】
 
+### 3.8 Pixel format conversion happens outside the network / generator 
+
+`SRModel` converts input/output pixel formats via `rgb2pixelformat_pt` / `pixelformat2rgb_pt` using config fields (`input_pixel_format`, `output_pixel_format`).  
+**Rule:** implement the generator assuming the incoming tensor already matches the configured pixel format. Do not perform implicit RGB↔Y or other color transforms inside the architecture unless explicitly exposed as parameters.
+In SRModel’s `test()` path, inputs are converted to the configured **pixel format** before the network, and outputs are converted back to RGB afterward. Do not build hard-coded RGB↔Y or pixel format conversions into `forward()` unless explicitly intended; the trainer already owns this conversion step.
+
 ---
 
 ## 4) Multi-Scale (x1/x2/x4): Recommended Strategy
@@ -273,20 +293,27 @@ Do one of:
 - implement tiling in the framework’s `Model.test()` wrapper
 - optionally add `forward_tiled(...)` as an explicit method, but keep `forward()` tile-agnostic
 
-### 5.3 Padding conventions (standard meaning)
+### 5.3 traiNNer-redux validation tiling details
+
+`SRModel` implements tiled validation inference with **batch size 1 only**, reflective padding, and overlap blending. It is enabled when `val.tile_size > 0`, and it auto-falls back to tiling on OOM with a forced `tile_size=256`.
+**Rule:** do not assume the trainer will handle batch>1 tiling for you; if you need batch-tiling support, implement it outside `forward()` and document it.
+
+### 5.4 Padding conventions (standard meaning)
 
 - `pre_pad`: pad whole input before processing
 - `tile_pad`: pad/overlap each tile; merge to remove tile borders  
   These concepts are explicitly described in the RealESRGANer helper docstring. [Hugging Face](https://huggingface.co/spaces/sczhou/CodeFormer/blob/refs%2Fpr%2F40/CodeFormer/basicsr/utils/realesrgan_utils.py)
 
-### 5.4 traiNNer-redux tiled inference specifics
+### 5.5 traiNNer-redux tiled inference specifics
+In traiNNer-redux, tiled inference is implemented in `SRModel.infer_tiled()` and is called only when `val.tile_size > 0`. It **asserts batch size = 1**, uses **reflect padding**, and merges tiles with a weight map. Architectures must therefore support `batch=1` inference and be safe under reflective padding/cropping.
 
 `SRModel.infer_tiled` assumes batch size 1 and uses:
 
 - `tile_size` and `tile_overlap` from the config
 - reflect padding for tiles
 - a cosine-like weighting map for seam blending
-- output cropping back to `H*scale × W*scale`【F:traiNNer/models/sr_model.py†L849-L919】
+- output cropping back to `H*scale × W*scale`
+
 
 **Architecture requirement:** the net must return a clean `NCHW` tensor for **every** tile and handle reflect-padded inputs without shape-dependent state.
 
@@ -341,6 +368,10 @@ Do not repeatedly allocate constant tensors in `forward()`. Precompute and regis
 
 ### 7.3 EMA friendliness
 
+#### EMA is actively used in traiNNer-redux SRModel
+
+`SRModel.test()` prefers `net_g_ema` when configured and switches back to training mode afterward. If your network has any training-time switches (e.g., stochastic layers), ensure `eval()` yields deterministic behavior and that EMA snapshots remain compatible with the same `state_dict` structure.
+
 Inference helpers often prefer EMA weights when available (RealESRGANer loads `params_ema` if present). [Hugging Face](https://huggingface.co/spaces/sczhou/CodeFormer/blob/refs%2Fpr%2F40/CodeFormer/basicsr/utils/realesrgan_utils.py)  
 Therefore:
 
@@ -348,6 +379,12 @@ Therefore:
 - keep stable parameter names/shapes
 
 traiNNer-redux updates `net_g_ema` after generator optimizer steps, unless AMP scaling is skipped. This assumes parameter names and shapes are stable across iterations. 【F:traiNNer/models/sr_model.py†L835-L846】
+
+
+### 7.4 Minimum spatial size constraints
+
+Some architectures require minimum spatial dimensions (e.g., windowed attention). traiNNer-redux tracks these in `REQUIRE_32_HW` / `REQUIRE_64_HW` lists for training/inference guardrails.
+*Rule:** if your model enforces a minimum H/W, add it to the appropriate set and document the constraint in the architecture docstring and template YAML.
 
 ---
 
@@ -366,7 +403,12 @@ traiNNer-redux exposes top-level runtime controls like:
 
 ### 8.1 Channels-last and memory format
 
-The trainer can move inputs to `channels_last` memory format. Convolutions generally support it, but custom ops or fused CUDA kernels may not. When using `channels_last`, test that your architecture preserves correctness and performance; otherwise document incompatibility. 【F:options/_templates/train/RCAN/RCAN_fidelity.yml†L1-L20】
+The trainer can move inputs to `channels_last` memory format. Convolutions generally support it, but custom ops or fused CUDA kernels may not. When using `channels_last`, test that your architecture preserves correctness and performance; otherwise document incompatibility. 
+SRModel enables AMP via `torch.autocast`, but will **disable fp16** (or fall back to bf16) if your `network_g.type` appears in `ARCHS_WITHOUT_FP16`. If your architecture is not safe in fp16, add its lowercase name to this list.
+
+### 8.2 Channels-last performance list (optional)
+
+Some architectures are known to be slower with channels-last memory format. When adding a model that regresses with `use_channels_last: true`, add it to `ARCHS_WITHOUT_CHANNELS_LAST` so option generation can avoid it.
 
 ---
 
@@ -382,7 +424,8 @@ Example (DIS): scale validation and scale-dependent upsampling in `__init__`. �
 
 ### 9.2 Upsampler choices are explicit and configured by name
 
-Transformer-style SR models often expose **`upsampler`** options like `"pixelshuffle"`, `"pixelshuffledirect"`, or `"none"` (see NEXUS-Lite).  
+Transformer-style SR models often expose **`upsampler`** string argument like `"pixelshuffle"`, `"pixelshuffledirect"`, or `"none"` (see NEXUS-Lite).
+DRCT, for example, has an `upsampler` parameter in its constructor alongside `upscale` and `img_range`.  
 
 **Rule:** map each upsampler string to a deterministic implementation, and keep the default `forward(lq)` signature independent from the choice.
 
@@ -514,6 +557,8 @@ In traiNNer-redux these are config-level runtime features (`use_amp`, `use_chann
 - non-parameter tensors are buffers; no CPU-only kernels in forward.
 - eval deterministic (noise disabled in val). [TraiNNer-Redux](https://trainner-redux.readthedocs.io/en/latest/config_reference.html)
 - tiling is outside forward; tile options follow standard meaning. [Hugging Face](https://huggingface.co/spaces/sczhou/CodeFormer/blob/refs%2Fpr%2F40/CodeFormer/basicsr/utils/realesrgan_utils.py)
+- for AMP safety, add fp16-incompatible nets to `ARCHS_WITHOUT_FP16`.
+- validate batch=1 tiled inference and reflect padding compatibility.
 
 ---
 
