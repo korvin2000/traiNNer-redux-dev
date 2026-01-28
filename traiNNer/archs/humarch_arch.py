@@ -168,7 +168,7 @@ def haar_reconstruct(
     d = (ll - lh - hl + hh) * 0.5
     x = torch.stack([a, b1, c1, d], dim=2)
     b, c, _, h, w = x.shape
-    x = x.view(b, c * 4, h, w)
+    x = x.reshape(b, c * 4, h, w)
     return _pixel_shuffle(x, 2)
 
 
