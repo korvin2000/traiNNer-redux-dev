@@ -24,9 +24,9 @@ BasicSR-family trainers generally follow the same contract:
 High-level flow in traiNNer-redux:
 
 1. `train.py` / `test.py` parse YAML → `Config.load_config_from_file`.
-2. `build_model(opt)` chooses `SRModel` (default) or other model wrappers. 【F:traiNNer/models/__init__.py†L1-L42】
-3. `SRModel` builds `network_g` via the arch registry (`build_network`) and calls `net_g(lq)` inside mixed-precision `autocast`. 【F:traiNNer/models/sr_model.py†L462-L491】
-4. Validation uses `net_g_ema` if present and can switch to tiled inference. 【F:traiNNer/models/sr_model.py†L940-L958】
+2. `build_model(opt)` chooses `SRModel` (default) or other model wrappers. 
+3. `SRModel` builds `network_g` via the arch registry (`build_network`) and calls `net_g(lq)` inside mixed-precision `autocast`.
+4. Validation uses `net_g_ema` if present and can switch to tiled inference.
 
 **Implication:** the generator only needs a standard `forward(lq)`; the trainer handles AMP, EMA, tiling, logging, datasets, and checkpoints.
 
@@ -69,7 +69,7 @@ def my_generator(**opt):
 
 If the framework uses auto-import scanning (common in BasicSR-derived repos), the architecture file should end with `_arch.py`. BasicSR-Examples explicitly calls this out. [GitHub](https://github.com/xinntao/BasicSR-examples)
 
-**Rule:** put your file under `traiNNer/archs/` and name it `*_arch.py`, because traiNNer-redux auto-imports every file ending in `_arch.py` from that folder at startup. 【F:traiNNer/archs/__init__.py†L11-L25】
+**Rule:** put your file under `traiNNer/archs/` and name it `*_arch.py`, because traiNNer-redux auto-imports every file ending in `_arch.py` from that folder at startup. 
 
 ### 1.2.2 Registry routing is not optional in traiNNer-redux
 
@@ -103,7 +103,7 @@ In this repo, the registry import *varies by framework*:
 
 1. `SPANDREL_REGISTRY` (external spandrel models)
 2. `ARCH_REGISTRY` (traiNNer-redux native architectures)
-3. `TESTARCH_REGISTRY` (test-only)【F:traiNNer/archs/__init__.py†L11-L57】
+3. `TESTARCH_REGISTRY` (test-only)
 
 **Rule:** register in the correct registry for discoverability:
 
@@ -173,7 +173,7 @@ Do not rely on the trainer to magically fix shape constraints unless your model 
 
 ### 2.6 Avoid dynamic parameters or shape-dependent module creation
 
-traiNNer-redux uses EMA and strict checkpoint loading. Dynamic module creation (e.g., creating layers inside `forward()`) breaks EMA weight shape consistency and `strict_load_g` behavior. Keep your module graph fixed in `__init__` for stable state dicts. 【F:traiNNer/models/sr_model.py†L835-L846】
+traiNNer-redux uses EMA and strict checkpoint loading. Dynamic module creation (e.g., creating layers inside `forward()`) breaks EMA weight shape consistency and `strict_load_g` behavior. Keep your module graph fixed in `__init__` for stable state dicts. 
 
 ---
 
@@ -192,7 +192,7 @@ If your internal architecture supports extra inputs (style vectors, noise maps, 
 
 ### 3.1.1 Pixel format conversions happen outside the net
 
-`SRModel` converts inputs to the configured `input_pixel_format` before calling `net_g`, and converts the output back afterward. Your architecture should assume it receives tensors already in the expected pixel format and should not perform additional RGB↔Y conversions unless explicitly configured. 【F:traiNNer/models/sr_model.py†L462-L491】
+`SRModel` converts inputs to the configured `input_pixel_format` before calling `net_g`, and converts the output back afterward. Your architecture should assume it receives tensors already in the expected pixel format and should not perform additional RGB↔Y conversions unless explicitly configured. 
 
 ### 3.2 Determinism rules (validation should be stable)
 
@@ -202,7 +202,7 @@ Therefore:
 - `eval()` should be deterministic by default
 - stochastic branches should be gated by `self.training` or explicit flags
 
-In validation/testing, traiNNer-redux switches to `net_g_ema` if present and runs inference under `torch.inference_mode()`. Avoid relying on training-only state or side effects in `forward()`. 【F:traiNNer/models/sr_model.py†L940-L958】
+In validation/testing, traiNNer-redux switches to `net_g_ema` if present and runs inference under `torch.inference_mode()`. Avoid relying on training-only state or side effects in `forward()`. 
 
 ### 3.3 Return type
 
@@ -223,7 +223,7 @@ Several in-repo modules guard against unsupported scale factors (e.g., `2^n` and
 - fail fast with a clear message if unsupported
 - ensure `forward()` returns `NCHW` with spatial size multiplied by `scale`
 
-This matches existing scale checks in upsampling helper modules used by SR architectures. 【F:OSRT/osrt_arch.py†L760-L775】
+This matches existing scale checks in upsampling helper modules used by SR architectures. 
 
 ### 3.6 Shape, dtype, and device invariants (SR / restoration)
 
@@ -237,7 +237,7 @@ If your model can accept non-RGB inputs, **bind it to explicit `num_in_ch`/`in_c
 
 ### 3.7 Mixed precision compatibility (fp16/bf16)
 
-Training and validation wrap `net_g(lq)` with `torch.autocast`, and `use_amp`/`amp_bf16` are standard config toggles. Ensure your layers and custom ops are AMP-safe. Avoid integer-only ops that silently upcast or unsupported dtypes. 【F:traiNNer/models/sr_model.py†L462-L491】【F:options/_templates/train/RCAN/RCAN_fidelity.yml†L1-L22】
+Training and validation wrap `net_g(lq)` with `torch.autocast`, and `use_amp`/`amp_bf16` are standard config toggles. Ensure your layers and custom ops are AMP-safe. Avoid integer-only ops that silently upcast or unsupported dtypes. 
 
 ### 3.8 Pixel format conversion happens outside the network / generator 
 
@@ -340,13 +340,13 @@ Your generator should not unexpectedly convert RGB↔Y unless explicitly configu
 
 ### 6.3 SR vs. restoration mode (scale=1)
 
-Many architectures in this repository explicitly document that `upscale=1` is used for **denoising** or **compression artifact reduction**, while `upscale=2/3/4/8` targets SR. This allows a single architecture definition to serve both SR and restoration tasks with the same `forward(lq)` contract. 【F:OSRT/osrt_arch.py†L806-L832】
+Many architectures in this repository explicitly document that `upscale=1` is used for **denoising** or **compression artifact reduction**, while `upscale=2/3/4/8` targets SR. This allows a single architecture definition to serve both SR and restoration tasks with the same `forward(lq)` contract. 
 
 **Rule:** if your model supports restoration, make `upscale=1` a valid (and well-tested) path; do not hard-require PixelShuffle.
 
 ### 6.4 Pixel format and range invariants
 
-traiNNer-redux allows configurable input/output pixel formats and performs the conversion outside the architecture. Keep your net focused on learning in the configured color space and respect the provided dtype/range; do **not** clamp or rescale unless explicitly required by the model design. 【F:traiNNer/models/sr_model.py†L462-L491】
+traiNNer-redux allows configurable input/output pixel formats and performs the conversion outside the architecture. Keep your net focused on learning in the configured color space and respect the provided dtype/range; do **not** clamp or rescale unless explicitly required by the model design. 
 
 ---
 
@@ -378,7 +378,7 @@ Therefore:
 - avoid dynamic module creation in forward
 - keep stable parameter names/shapes
 
-traiNNer-redux updates `net_g_ema` after generator optimizer steps, unless AMP scaling is skipped. This assumes parameter names and shapes are stable across iterations. 【F:traiNNer/models/sr_model.py†L835-L846】
+traiNNer-redux updates `net_g_ema` after generator optimizer steps, unless AMP scaling is skipped. This assumes parameter names and shapes are stable across iterations. 
 
 
 ### 7.4 Minimum spatial size constraints
@@ -420,7 +420,7 @@ Many registered models **explicitly accept scales {1, 2, 3, 4}** and raise error
 
 **Rule:** validate the scale early (init-time) and fail with a clear error if unsupported. If your model is restoration-only, set `scale=1` and keep the output size identical to input.
 
-Example (DIS): scale validation and scale-dependent upsampling in `__init__`. 【F:traiNNer/archs/dis_arch.py†L88-L152】
+Example (DIS): scale validation and scale-dependent upsampling in `__init__`. 【F:dis_arch.py†L88-L152】
 
 ### 9.2 Upsampler choices are explicit and configured by name
 
@@ -457,14 +457,14 @@ Some architectures register into more than one registry via stacked decorators (
 
 | Invariant | Why it matters | Evidence |
 | --- | --- | --- |
-| `forward(lq)` → Tensor | SRModel invokes generator with one tensor input. | SRModel inference call uses `net_g(lq)`.【F:traiNNer/models/sr_model.py†L462-L491】 |
-| Output spatial size = `H*scale × W*scale` (SR) | Tiled inference and metrics assume deterministic scaling. | Tiling constructs output shape using `opt.scale`.【F:traiNNer/models/sr_model.py†L849-L919】 |
-| Use `opt.scale` as source of truth | Dataset crop sizes are derived from `scale`. | Training uses `opt.scale` for LQ/GT sizing.【F:train.py†L73-L121】 |
-| AMP-safe operations | `torch.autocast` is enabled with fp16/bf16. | Autocast wraps generator calls; AMP config exists. 【F:traiNNer/models/sr_model.py†L462-L491】【F:options/_templates/train/RCAN/RCAN_fidelity.yml†L1-L22】 |
-| EMA-friendly static parameters | EMA update assumes stable params each step. | EMA update in SRModel. 【F:traiNNer/models/sr_model.py†L835-L846】 |
-| Batch size 1 compatibility for tiling | `infer_tiled` enforces `b==1`. | Tiling asserts batch size 1. 【F:traiNNer/models/sr_model.py†L857-L866】 |
-| Tile-safe padding | Tiling uses reflect padding. | Reflect padding in tiled inference. 【F:traiNNer/models/sr_model.py†L871-L904】 |
-| `pretrain_network_g` compatibility | Testing requires pretrained generator path. | test.py asserts `pretrain_network_g`. 【F:test.py†L17-L30】 |
+| `forward(lq)` → Tensor | SRModel invokes generator with one tensor input. | SRModel inference call uses `net_g(lq)`. |
+| Output spatial size = `H*scale × W*scale` (SR) | Tiled inference and metrics assume deterministic scaling. | Tiling constructs output shape using `opt.scale`. |
+| Use `opt.scale` as source of truth | Dataset crop sizes are derived from `scale`. | Training uses `opt.scale` for LQ/GT sizing. |
+| AMP-safe operations | `torch.autocast` is enabled with fp16/bf16. | Autocast wraps generator calls; AMP config exists.  |
+| EMA-friendly static parameters | EMA update assumes stable params each step. | EMA update in SRModel.  |
+| Batch size 1 compatibility for tiling | `infer_tiled` enforces `b==1`. | Tiling asserts batch size 1.  |
+| Tile-safe padding | Tiling uses reflect padding. | Reflect padding in tiled inference.  |
+| `pretrain_network_g` compatibility | Testing requires pretrained generator path. | test.py asserts `pretrain_network_g`.  |
 
 ---
 
@@ -543,7 +543,7 @@ In traiNNer-redux these are config-level runtime features (`use_amp`, `use_chann
 ### Q9: “My model fails with tile_size > 0.”
 
 **Cause:** the architecture assumes full-image context, or has state that depends on absolute image size (e.g., positional embeddings without proper interpolation).  
-**Fix:** add safe padding/positional embedding interpolation inside the model (not the trainer) so it can process tiles independently. Validate that `forward()` handles reflect-padded inputs and that outputs are cropped correctly. 【F:traiNNer/models/sr_model.py†L849-L919】
+**Fix:** add safe padding/positional embedding interpolation inside the model (not the trainer) so it can process tiles independently. Validate that `forward()` handles reflect-padded inputs and that outputs are cropped correctly. 
 
 ---
 
