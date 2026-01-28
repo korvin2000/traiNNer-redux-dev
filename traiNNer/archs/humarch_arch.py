@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from typing import Dict, Iterable, Optional, Tuple
 
 import torch
 from torch import nn
 from torch.nn import functional as F
 
+from traiNNer.utils.registry import ARCH_REGISTRY
 
 @dataclass(frozen=True)
 class HumArchConfig:
@@ -113,19 +114,20 @@ class StyleEncoder(nn.Module):
         return self.mlp(x)
 
 
-def gradient_magnitude(x: torch.Tensor) -> torch.Tensor:
-    gray = x.mean(dim=1, keepdim=True)
-    kernel_x = torch.tensor(
-        [[-1.0, 0.0, 1.0], [-2.0, 0.0, 2.0], [-1.0, 0.0, 1.0]],
-        device=x.device,
-        dtype=x.dtype,
-    )
-    kernel_y = kernel_x.t()
-    kernel_x = kernel_x.view(1, 1, 3, 3)
-    kernel_y = kernel_y.view(1, 1, 3, 3)
-    grad_x = F.conv2d(gray, kernel_x, padding=1)
-    grad_y = F.conv2d(gray, kernel_y, padding=1)
-    return torch.sqrt(grad_x**2 + grad_y**2 + 1e-6)
+class SobelMagnitude(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        kernel = torch.tensor([[-1.0, 0.0, 1.0], [-2.0, 0.0, 2.0], [-1.0, 0.0, 1.0]])
+        self.register_buffer("kernel_x", kernel.view(1, 1, 3, 3))
+        self.register_buffer("kernel_y", kernel.t().view(1, 1, 3, 3))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        gray = x.mean(dim=1, keepdim=True)
+        kernel_x = self.kernel_x.to(dtype=x.dtype)
+        kernel_y = self.kernel_y.to(dtype=x.dtype)
+        grad_x = F.conv2d(gray, kernel_x, padding=1)
+        grad_y = F.conv2d(gray, kernel_y, padding=1)
+        return torch.sqrt(grad_x**2 + grad_y**2 + 1e-6)
 
 
 def make_border_mask(height: int, width: int, device: torch.device) -> torch.Tensor:
@@ -384,6 +386,7 @@ class StructureRefiner2(nn.Module):
         )
         self.mid_head = MidBandHead(in_channels, feature_channels, style_dim)
         self.seed_conv = nn.Conv2d(in_channels, 1, 3, padding=1)
+        self.grad = SobelMagnitude()
         self.register_buffer("kernels", kernels, persistent=False)
 
     def _confidence_brake(
@@ -418,7 +421,7 @@ class StructureRefiner2(nn.Module):
         grad_y1: torch.Tensor | None = None,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         if grad_y1 is None:
-            grad_y1 = gradient_magnitude(y1)
+            grad_y1 = self.grad(y1)
         edge_gate = torch.clamp(edge_gain * grad_y1, 0.0, 1.0)
 
         ref_input = torch.cat([y1, y_base, grad_y1, f_hr, t_up, z_l], dim=1)
@@ -589,6 +592,7 @@ class HumArchGenerator(nn.Module):
             thin_hair_weight=config.thin_hair_weight,
             thin_lash_weight=config.thin_lash_weight,
         )
+        self.grad = SobelMagnitude()
 
     def compute_style(self, x: torch.Tensor, max_side: int = 320) -> torch.Tensor:
         b, _, h, w = x.shape
@@ -629,7 +633,7 @@ class HumArchGenerator(nn.Module):
         t = self.pretex(refined)
         t_up = self._upsample_feature(t, scale)
 
-        grad_base = gradient_magnitude(y_base)
+        grad_base = self.grad(y_base)
 
         if z_l is None:
             z_l = torch.zeros_like(grad_base)
@@ -681,7 +685,7 @@ class HumArchGenerator(nn.Module):
             y1=y1,
             f_hr=f_hr,
             t_up=t_up,
-            grad=gradient_magnitude(y1),
+            grad=self.grad(y1),
             mask_tex=mask_tex,
         )
 
@@ -716,7 +720,7 @@ class HumArchGenerator(nn.Module):
             t_up = F.avg_pool2d(cache.t_up, 2)
             z_l = F.avg_pool2d(z_l, 2)
             border = make_border_mask(y1.shape[-2], y1.shape[-1], y1.device)
-            grad_y1 = gradient_magnitude(y1)
+            grad_y1 = self.grad(y1)
         else:
             y1 = cache.y1
             y_base = cache.y_base
@@ -761,61 +765,60 @@ class HumArchGenerator(nn.Module):
         return y2, debug
 
 
+@ARCH_REGISTRY.register()
 class HumArch(nn.Module):
     """Human anatomy restoration/SR generator with two-pass detail synthesis."""
 
-    def __init__(
-        self,
-        base_channels: int = 48,
-        style_dim: int = 128,
-        noise_stride: int = 16,
-        pretex_blocks: int = 8,
-        trunk_blocks: tuple[int, int, int] = (2, 2, 3),
-        trunk_refine_blocks: int = 6,
-        hrtex_blocks: int = 6,
-        thin_alpha: tuple[float, float, float] = (0.08, 0.1, 0.12),
-        mid_alpha: tuple[float, float, float] = (0.05, 0.07, 0.08),
-        edge_gain: float = 3.0,
-        line_kernel_size: int = 7,
-    ) -> None:
+    def __init__(self, **opt: object) -> None:
         super().__init__()
-        config = HumArchConfig(
-            base_channels=base_channels,
-            style_dim=style_dim,
-            noise_stride=noise_stride,
-            pretex_blocks=pretex_blocks,
-            trunk_blocks=trunk_blocks,
-            trunk_refine_blocks=trunk_refine_blocks,
-            hrtex_blocks=hrtex_blocks,
-            thin_alpha=thin_alpha,
-            mid_alpha=mid_alpha,
-            edge_gain=edge_gain,
-            line_kernel_size=line_kernel_size,
+        default_cfg = HumArchConfig()
+        cfg_kwargs: dict[str, object] = {}
+        for field in fields(HumArchConfig):
+            value = opt.get(field.name, getattr(default_cfg, field.name))
+            if field.name in {"trunk_blocks", "thin_alpha", "mid_alpha"} and isinstance(value, list):
+                value = tuple(value)
+            cfg_kwargs[field.name] = value
+
+        self.scale = int(opt.get("scale", opt.get("upscale", 4)))
+        if self.scale not in (1, 2, 4):
+            raise ValueError("scale must be 1, 2, or 4")
+
+        self.noise_mode = str(opt.get("noise_mode", "zero")).lower()
+        self.style_long_side = int(opt.get("style_long_side", 320))
+
+        self.config = HumArchConfig(**cfg_kwargs)
+        self.generator = HumArchGenerator(self.config)
+
+    def compute_style(self, image: torch.Tensor) -> torch.Tensor:
+        return self.generator.compute_style(image, max_side=self.style_long_side)
+
+    def _make_noise(self, image: torch.Tensor) -> Optional[torch.Tensor]:
+        if self.noise_mode != "rand" or not self.training:
+            return None
+        out_h = image.shape[-2] * self.scale
+        out_w = image.shape[-1] * self.scale
+        h_lr = math.ceil(out_h / self.config.noise_stride)
+        w_lr = math.ceil(out_w / self.config.noise_stride)
+        noise = torch.randn(
+            image.shape[0],
+            1,
+            h_lr,
+            w_lr,
+            device=image.device,
+            dtype=image.dtype,
         )
-        self.generator = HumArchGenerator(config)
-
-    @property
-    def config(self) -> HumArchConfig:
-        return self.generator.config
-
-    def compute_style(self, image: torch.Tensor, max_side: int = 320) -> torch.Tensor:
-        return self.generator.compute_style(image, max_side=max_side)
+        return F.interpolate(noise, size=(out_h, out_w), mode="bilinear", align_corners=False)
 
     def forward(
-        self,
-        image: torch.Tensor,
-        scale: int,
-        z_g: Optional[torch.Tensor] = None,
-        z_l: Optional[torch.Tensor] = None,
-        border_mask: Optional[torch.Tensor] = None,
-        return_debug: bool = False,
+        self, image: torch.Tensor, return_debug: bool = False
     ) -> torch.Tensor | tuple[torch.Tensor, dict[str, torch.Tensor]]:
+        z_l = self._make_noise(image)
         return self.generator(
             image,
-            scale=scale,
-            z_g=z_g,
+            scale=self.scale,
+            z_g=None,
             z_l=z_l,
-            border_mask=border_mask,
+            border_mask=None,
             return_debug=return_debug,
         )
 
